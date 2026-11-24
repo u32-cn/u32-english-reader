@@ -91,6 +91,49 @@ button { font: inherit; cursor: pointer; }
   font-weight: 600;
 }
 
+/* ---------- 音色/语速弹层 ---------- */
+.setting-wrap { position: relative; }
+.popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 264px;
+  background: #fff;
+  border: 1px solid #e3edf3;
+  border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(23, 62, 86, .18);
+  padding: 14px 15px 15px;
+  z-index: 60;
+}
+.popover[hidden] { display: none; }
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+.field:not(:first-child) { margin-top: 13px; }
+.field b { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+.popover select {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: #fafcfd;
+  border: 1px solid #e1eaf1;
+  border-radius: 9px;
+  padding: 8px 10px;
+}
+.popover select:focus { outline: none; border-color: var(--accent); }
+.popover input[type="range"] {
+  width: 100%;
+  margin: 2px 0 4px;
+  accent-color: var(--accent);
+}
+.popover .wide { width: 100%; margin-top: 12px; }
+
 /* ---------- 正文 ---------- */
 .stage {
   flex: 1;

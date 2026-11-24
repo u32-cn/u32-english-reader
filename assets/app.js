@@ -56,7 +56,7 @@
   var STORE_KEY = "en-reader.state.v1";
   var WORD_RE = /[A-Za-z]+(?:['’\-][A-Za-z]+)*|\d+(?:[.,:]\d+)*/g;
 
-  var state = { idx: 0, showZh: false, auto: false, data: null };
+  var state = { idx: 0, showZh: false, auto: false, data: null, voiceURI: "", rate: 1 };
   var voice = null;
   var toastTimer = 0;
 
@@ -193,12 +193,57 @@
   }
 
   /* ---------- 朗读 ---------- */
+  function allEnglishVoices() {
+    if (!("speechSynthesis" in window)) return [];
+    return (window.speechSynthesis.getVoices() || []).filter(function (v) {
+      return /^en([-_]|$)/i.test(v.lang || "");
+    });
+  }
+
   function pickVoice() {
-    if (!("speechSynthesis" in window)) return;
-    var vs = window.speechSynthesis.getVoices() || [];
+    var vs = allEnglishVoices();
+    if (!vs.length) return;
+    if (state.voiceURI) {
+      var saved = vs.filter(function (v) {
+        return (v.voiceURI || v.name) === state.voiceURI;
+      })[0];
+      if (saved) { voice = saved; return; }
+    }
     voice = vs.filter(function (v) { return /^en[-_]US/i.test(v.lang); })[0] ||
       vs.filter(function (v) { return /^en[-_]GB/i.test(v.lang); })[0] ||
-      vs.filter(function (v) { return /^en/i.test(v.lang); })[0] || null;
+      vs[0];
+    state.voiceURI = voice.voiceURI || voice.name;
+  }
+
+  function populateVoices() {
+    var sel = $("sel-voice");
+    if (!sel) return;
+    var vs = allEnglishVoices();
+    sel.innerHTML = "";
+    if (!vs.length) {
+      var o = document.createElement("option");
+      o.value = "";
+      o.textContent = "系统暂无英语语音";
+      sel.appendChild(o);
+      sel.disabled = true;
+      return;
+    }
+    sel.disabled = false;
+    vs.forEach(function (v) {
+      var opt = document.createElement("option");
+      opt.value = v.voiceURI || v.name;
+      opt.textContent = v.name + " · " + v.lang;
+      sel.appendChild(opt);
+    });
+    pickVoice();
+    if (voice) sel.value = voice.voiceURI || voice.name;
+  }
+
+  function renderRate() {
+    var el = $("rate-val");
+    if (el) el.textContent = state.rate.toFixed(2).replace(/0+$/, "").replace(/\.$/, "") + "×";
+    var range = $("range-rate");
+    if (range) range.value = String(state.rate);
   }
 
   function speak(text) {
@@ -209,7 +254,7 @@
     window.speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(text);
     u.lang = "en-US";
-    u.rate = 0.92;
+    u.rate = state.rate;
     if (voice) u.voice = voice;
     u.onboundary = function (e) {
       if (e.name && e.name !== "word") return;
@@ -294,6 +339,25 @@
     box.value = "";
   }
 
+  /* ---------- 音色/语速弹层 ---------- */
+  function togglePopover() {
+    var pop = $("voice-pop");
+    if (!pop) return;
+    pop.hidden = !pop.hidden;
+    $("btn-voice").setAttribute("aria-expanded", String(!pop.hidden));
+    if (!pop.hidden) {
+      populateVoices();
+      renderRate();
+    }
+  }
+
+  function closePopover() {
+    var pop = $("voice-pop");
+    if (!pop || pop.hidden) return;
+    pop.hidden = true;
+    $("btn-voice").setAttribute("aria-expanded", "false");
+  }
+
   /* ---------- 载入面板 ---------- */
   function openPanel() {
     $("panel").hidden = false;
@@ -347,7 +411,8 @@
   function persist() {
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify({
-        idx: state.idx, showZh: state.showZh, auto: state.auto
+        idx: state.idx, showZh: state.showZh, auto: state.auto,
+        voiceURI: state.voiceURI, rate: state.rate
       }));
     } catch (e) { /* 隐私模式忽略 */ }
   }
@@ -360,6 +425,8 @@
       if (v && typeof v.idx === "number") state.idx = v.idx;
       state.showZh = !!(v && v.showZh);
       state.auto = !!(v && v.auto);
+      if (v && typeof v.voiceURI === "string") state.voiceURI = v.voiceURI;
+      if (v && typeof v.rate === "number") state.rate = Math.min(1.5, Math.max(0.5, v.rate));
     } catch (e) { /* 忽略 */ }
   }
 
@@ -376,9 +443,11 @@
     if (state.idx >= state.data.sentences.length) state.idx = 0;
 
     if ("speechSynthesis" in window) {
-      pickVoice();
-      window.speechSynthesis.onvoiceschanged = pickVoice;
+      populateVoices();
+      populateVoices();
+      window.speechSynthesis.onvoiceschanged = populateVoices;
     }
+    renderRate();
 
     $("prompt-text").textContent = PROMPT;
     $("sample-text").textContent = SAMPLE;
@@ -406,6 +475,31 @@
     $("btn-next").addEventListener("click", function () { go(1); });
 
     $("btn-load").addEventListener("click", openPanel);
+    $("btn-voice").addEventListener("click", function (e) {
+      e.stopPropagation();
+      togglePopover();
+    });
+    $("sel-voice").addEventListener("change", function () {
+      var key = this.value;
+      var picked = allEnglishVoices().filter(function (v) {
+        return (v.voiceURI || v.name) === key;
+      })[0];
+      if (!picked) return;
+      voice = picked;
+      state.voiceURI = key;
+      persist();
+      toast("已切换音色：" + picked.name);
+    });
+    $("range-rate").addEventListener("input", function () {
+      var val = parseFloat(this.value);
+      if (!isFinite(val)) return;
+      state.rate = val;
+      renderRate();
+      persist();
+    });
+    $("btn-preview").addEventListener("click", function () {
+      speak(state.data.sentences[state.idx].en);
+    });
     $("btn-pick-file").addEventListener("click", function () { $("file").click(); });
     $("file").addEventListener("change", function () {
       var f = this.files && this.files[0];
@@ -427,11 +521,13 @@
 
     document.addEventListener("click", function (e) {
       if (!e.target.closest(".wordcard") && !e.target.closest(".w")) closeCard();
+      if (!e.target.closest(".setting-wrap")) closePopover();
     });
 
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
         if (!$("panel").hidden) { closePanel(); return; }
+        if (!$("voice-pop").hidden) { closePopover(); return; }
         closeCard();
         return;
       }
