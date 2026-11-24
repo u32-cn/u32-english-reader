@@ -7,3 +7,12 @@ Thumbs.db
 # AI 工具目录与临时产物
 .vtxf-ai-work/
 .workbuddy/
+.zcode/
+.claude/
+.codebuddy/
+.cursor/
+.windsurf/
+.codeium/
+.aider*
+.copilot*
+CLAUDE.md.local
