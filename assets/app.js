@@ -162,6 +162,7 @@
     card.innerHTML = html;
     card.hidden = false;
     place(card, el);
+    speak(el.textContent);
 
     card.querySelector(".wc-play").addEventListener("click", function (e) {
       e.stopPropagation();

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>离线语音帮助 · 轻读</title>
+<meta name="description" content="轻读朗读很慢时，如何切换到 Windows 本地离线语音。">
+<link rel="stylesheet" href="assets/reader.css">
+<style>
+  .help { width: min(920px, 100%); margin: 0 auto; padding: 8px 20px 56px; }
+  .hero { text-align: center; padding: 26px 0 30px; }
+  .kicker { font-size: 12px; letter-spacing: .22em; color: var(--accent); font-weight: 600; }
+  .hero h1 { font-size: clamp(26px, 4vw, 38px); line-height: 1.25; margin: 10px 0 12px; text-transform: none; letter-spacing: 0; }
+  .lead { font-size: 15px; line-height: 1.8; color: #4f6272; margin: 0 auto; max-width: 700px; }
+  .answer {
+    max-width: 720px; margin: 22px auto 0; text-align: left;
+    background: #eef8f6; border: 1px solid #cfe8e3; border-left: 4px solid var(--accent);
+    border-radius: 12px; padding: 14px 18px; font-size: 14px; line-height: 1.75;
+  }
+  .answer b { color: var(--accent); margin-right: 8px; }
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: 18px;
+    padding: 24px 26px; margin: 0 0 18px; box-shadow: 0 10px 30px rgba(23, 62, 86, .07);
+  }
+  .card h2 { font-size: 18px; margin: 0 0 14px; display: flex; align-items: center; gap: 10px; }
+  .num {
+    flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent);
+    color: #fff; font-size: 13px; display: grid; place-items: center;
+  }
+  .card p { font-size: 14px; line-height: 1.8; color: #435667; }
+  ol.steps { margin: 14px 0 0; padding-left: 22px; }
+  ol.steps li { font-size: 14px; line-height: 1.8; margin-bottom: 7px; }
+  figure { margin: 18px 0 0; }
+  figure img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 12px; }
+  figcaption { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+  .tip {
+    margin-top: 14px; background: #f5f8fa; border-radius: 10px;
+    padding: 11px 14px; font-size: 13px; line-height: 1.7; color: #4f6272;
+  }
+  .path { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .path article { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  .path h3 { font-size: 14px; margin: 0 0 10px; color: var(--ink); }
+  .path img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 10px; }
+  .path p { font-size: 13px; margin: 10px 0 0; line-height: 1.7; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0; }
+  .chips li { background: #f2f6f9; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 12.5px; color: #4f6272; }
+  .warn { border-color: #f0d0cf; background: #fffafa; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.8; }
+  .check .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 9px; }
+  img.zoomable { cursor: zoom-in; }
+  .lightbox {
+    position: fixed; inset: 0; z-index: 100; background: rgba(15, 32, 45, .86);
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    padding: 24px;
+  }
+  .lightbox[hidden] { display: none; }
+  .lightbox img {
+    max-width: 96vw; max-height: 84vh; object-fit: contain;
+    background: #fff; border-radius: 10px; box-shadow: 0 20px 60px rgba(0, 0, 0, .4);
+  }
+  .lightbox-close {
+    position: absolute; top: 18px; right: 22px; width: 38px; height: 38px;
+    border: none; border-radius: 50%; background: rgba(255, 255, 255, .16);
+    color: #fff; font-size: 22px; line-height: 1;
+  }
+  .lightbox-close:hover { background: rgba(255, 255, 255, .3); }
+  .lightbox-tip { color: rgba(255, 255, 255, .75); font-size: 12px; margin: 14px 0 0; }
+  .help-foot { text-align: center; font-size: 12px; color: var(--muted); line-height: 1.8; margin-top: 26px; }
+  .help-foot a { color: var(--accent); }
+  @media (max-width: 640px) {
+    .path { grid-template-columns: 1fr; }
+    .card { padding: 18px; }
+    .hero { padding: 18px 0 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="brand-dot"></span>轻读 · LIGHT</div>
+  <div class="tools"><a class="ghost" href="index.html">← 返回阅读器</a></div>
+</header>
+
+<main class="help">
+  <section class="hero">
+    <div class="kicker">帮助 / 朗读</div>
+    <h1>朗读很慢？换成离线语音</h1>
+    <p class="lead">音色列表里带 <b>Online / Online (Natural)</b> 的语音走在线合成，每次朗读都要联网请求。网络一慢，首字延迟就很明显。</p>
+    <div class="answer"><b>一句话</b>选 <code>Microsoft Mark</code> / <code>Zira</code> / <code>David</code>（en-US，名字里没有 Online），朗读就不走网络。你截图里这三个已经装好了。</div>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">1</span>已装好：直接切换（30 秒）</h2>
+    <p>适用：打开「音色」弹层后，能看到红框里的三个名字。不用再装任何东西。</p>
+    <ol class="steps">
+      <li>打开阅读器，点顶栏「音色」。</li>
+      <li>选 <code>Microsoft Mark - English (United States) · en-US</code>（男声，推荐），或 <code>Zira</code>（女声）、<code>David</code>。</li>
+      <li>关掉弹层，按 <code>空格</code> 或点「朗读本句」试听。</li>
+      <li>选择会记住，下次打开自动沿用。</li>
+    </ol>
+    <figure>
+      <img class="zoomable" src="assets/help/8.jpg" alt="音色下拉列表，红框标出本地离线音色 Mark、Zira、David">
+      <figcaption>8.jpg — 红框内是本地音色；下面带 Online (Natural) 的都是在线语音。点击图片可放大。</figcaption>
+    </figure>
+    <div class="tip">判断规则只有一条：<b>名字里带 Online 就别选</b>。本地音色标 <code>en-US</code>，断网也能读。</div>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">2</span>没装过：从零安装英语语音</h2>
+    <p>换电脑、或音色列表里只有 Online 条目时，按下面四步装一次。装完以后朗读完全离线。下面图片点击可放大。</p>
+    <div class="path">
+      <article>
+        <h3>① 语言和区域</h3>
+        <img class="zoomable" src="assets/help/3.jpg" alt="设置中的语言和区域页面，当前只有简体中文" loading="lazy">
+        <p>打开 <b>设置 → 时间和语言 → 语言和区域</b>。图里系统只有简体中文，所以英语语音还没装。</p>
+      </article>
+      <article>
+        <h3>② 添加英语（美国）</h3>
+        <img class="zoomable" src="assets/help/4.jpg" alt="添加语言窗口，搜索 English 并选中 English United States" loading="lazy">
+        <p>点「添加语言」→ 搜 <code>English</code> → 选 <b>English (United States)</b> → 下一步。</p>
+      </article>
+      <article>
+        <h3>③ 勾选文本到语音</h3>
+        <img class="zoomable" src="assets/help/5.jpg" alt="安装语言功能窗口，勾选语言包和文本到语音" loading="lazy">
+        <p>勾 <b>语言包</b> + <b>文本到语音</b>。语音识别、手写不需要可取消；别勾「设为显示语言」。</p>
+      </article>
+      <article>
+        <h3>④ 等安装完成</h3>
+        <img class="zoomable" src="assets/help/6.jpg" alt="语言安装进度页面，语言包和文本转语音正在下载" loading="lazy">
+        <p>点「安装」，等进度走完。之后<b>关闭并重开 Chrome / Edge</b>，再打开页面音色列表。</p>
+      </article>
+    </div>
+    <details class="fold">
+      <summary>装完还是没有 Mark / Zira / David？</summary>
+      <div class="fold-body">
+        <p>去 <b>设置 → 时间和语言 → 语音 → 添加语音</b>，选 <code>English (United States)</code>；或先装完 Windows Update 再重启浏览器。</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="card warn">
+    <h2>别选这些：带 Online 的都是在线语音</h2>
+    <p>它们正是慢的来源，断网还会直接没声音。</p>
+    <ul class="chips">
+      <li>Microsoft WilliamMultilingual Online (Natural)</li>
+      <li>Microsoft Natasha / Clara / Liam Online (Natural)</li>
+      <li>Microsoft Yan / Sam Online (Natural)</li>
+      <li>Microsoft Neerja / Prabhat Online (Natural)</li>
+      <li>Microsoft Connor Online (Natural)</li>
+      <li>任何带 Online 字样的条目</li>
+    </ul>
+    <div class="tip">Windows「讲述人」里的自然语音（Guy / Jenny / Aria）虽下载到本地，但网页语音接口里通常仍标为 <code>Online (Natural)</code>，延迟不可控，不建议用。</div>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">✓</span>断网验证</h2>
+    <div class="check"><span class="dot"></span><span>选中 <code>Microsoft Mark</code>。</span></div>
+    <div class="check"><span class="dot"></span><span>断开网络（关 Wi-Fi / 拔网线），刷新页面。</span></div>
+    <div class="check"><span class="dot"></span><span>按 <code>空格</code> 朗读：有声音 = 离线生效；没声音 = 当前还是在线音色，重选本地音色。</span></div>
+    <p style="margin-top:12px">体感差异：在线音色点下播放后有「等一下」的首字延迟；本地音色几乎立刻起声。</p>
+  </section>
+
+  <p class="help-foot">
+    依据 Microsoft 支持文档
+    <a href="https://support.microsoft.com/en-au/accessibility/windows/narrator/appendix-a-supported-languages-and-voices" target="_blank" rel="noopener">Appendix A: Supported languages and voices</a>
+    ——英语（美国）本地 TTS 语音为 David、Mark（男）与 Zira（女）。
+  </p>
+</main>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lightbox-close" id="lightbox-close" type="button" aria-label="关闭大图">×</button>
+  <img id="lightbox-img" src="" alt="">
+  <p class="lightbox-tip">点击空白处或按 Esc 关闭</p>
+</div>
+
+<script>
+(function () {
+  var box = document.getElementById("lightbox");
+  var img = document.getElementById("lightbox-img");
+  var closeBtn = document.getElementById("lightbox-close");
+
+  Array.prototype.forEach.call(document.querySelectorAll("img.zoomable"), function (el) {
+    el.addEventListener("click", function () {
+      img.src = this.src;
+      img.alt = this.alt;
+      box.hidden = false;
+      document.body.style.overflow = "hidden";
+    });
+  });
+
+  function close() {
+    box.hidden = true;
+    img.src = "";
+    document.body.style.overflow = "";
+  }
+
+  closeBtn.addEventListener("click", close);
+  box.addEventListener("click", function (e) { if (e.target === box) close(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !box.hidden) close();
+  });
+})();
+</script>
+
+</body>
+</html>

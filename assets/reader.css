@@ -74,6 +74,7 @@ button { font: inherit; cursor: pointer; }
 
 .ghost {
   background: #fff;
+  text-decoration: none;
   border: 1px solid var(--line);
   color: var(--muted);
   padding: 7px 15px;
