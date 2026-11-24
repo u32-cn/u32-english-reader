@@ -241,7 +241,7 @@
 
   function renderRate() {
     var el = $("rate-val");
-    if (el) el.textContent = state.rate.toFixed(2).replace(/0+$/, "").replace(/\.$/, "") + "×";
+    if (el) el.textContent = state.rate.toFixed(1) + "×";
     var range = $("range-rate");
     if (range) range.value = String(state.rate);
   }
@@ -426,7 +426,9 @@
       state.showZh = !!(v && v.showZh);
       state.auto = !!(v && v.auto);
       if (v && typeof v.voiceURI === "string") state.voiceURI = v.voiceURI;
-      if (v && typeof v.rate === "number") state.rate = Math.min(1.5, Math.max(0.5, v.rate));
+      if (v && typeof v.rate === "number") {
+        state.rate = Math.min(2, Math.max(0.5, Math.round(v.rate * 10) / 10));
+      }
     } catch (e) { /* 忽略 */ }
   }
 
