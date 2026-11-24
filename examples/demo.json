@@ -1,0 +1,73 @@
+{
+  "title": "A Morning Walk",
+  "sentences": [
+    {
+      "en": "The morning train was late again, so Mia walked to the office.",
+      "zh": "早班火车又晚点了，于是米娅步行去了办公室。",
+      "words": {
+        "the": { "zh": "这；该（定冠词）", "pos": "art.", "ipa": "/ðə/" },
+        "morning": { "zh": "早晨", "pos": "n.", "ipa": "/ˈmɔːrnɪŋ/" },
+        "train": { "zh": "火车", "pos": "n.", "ipa": "/treɪn/" },
+        "was": { "zh": "是（be 的过去式）", "pos": "v.", "ipa": "/wəz/" },
+        "late": { "zh": "晚点的；迟的", "pos": "adj.", "ipa": "/leɪt/" },
+        "again": { "zh": "又；再一次", "pos": "adv.", "ipa": "/əˈɡen/" },
+        "so": { "zh": "所以；于是", "pos": "conj.", "ipa": "/soʊ/" },
+        "mia": { "zh": "米娅（人名）", "pos": "n.", "ipa": "/ˈmiːə/" },
+        "walked": { "zh": "步行（walk 的过去式）", "pos": "v.", "ipa": "/wɔːkt/" },
+        "to": { "zh": "到；向", "pos": "prep.", "ipa": "/tuː/" },
+        "office": { "zh": "办公室", "pos": "n.", "ipa": "/ˈɔːfɪs/" }
+      }
+    },
+    {
+      "en": "Along the way, she noticed a small bakery that had just opened.",
+      "zh": "一路上，她注意到一家刚开业的小面包店。",
+      "words": {
+        "along": { "zh": "沿着；一路上", "pos": "prep.", "ipa": "/əˈlɔːŋ/" },
+        "the": { "zh": "这；该（定冠词）", "pos": "art.", "ipa": "/ðə/" },
+        "way": { "zh": "路；途中", "pos": "n.", "ipa": "/weɪ/" },
+        "she": { "zh": "她", "pos": "pron.", "ipa": "/ʃiː/" },
+        "noticed": { "zh": "注意到（notice 的过去式）", "pos": "v.", "ipa": "/ˈnoʊtɪst/" },
+        "a": { "zh": "一个（不定冠词）", "pos": "art.", "ipa": "/ə/" },
+        "small": { "zh": "小的", "pos": "adj.", "ipa": "/smɔːl/" },
+        "bakery": { "zh": "面包店", "pos": "n.", "ipa": "/ˈbeɪkəri/" },
+        "that": { "zh": "那个（引导定语从句）", "pos": "pron.", "ipa": "/ðæt/" },
+        "had": { "zh": "已经（have 的过去式）", "pos": "v.", "ipa": "/hæd/" },
+        "just": { "zh": "刚刚", "pos": "adv.", "ipa": "/dʒʌst/" },
+        "opened": { "zh": "开业（open 的过去式）", "pos": "v.", "ipa": "/ˈoʊpənd/" }
+      }
+    },
+    {
+      "en": "The smell of fresh bread followed her for two whole blocks.",
+      "zh": "新鲜面包的香味跟着她走了整整两个街区。",
+      "words": {
+        "the": { "zh": "这；该（定冠词）", "pos": "art.", "ipa": "/ðə/" },
+        "smell": { "zh": "气味；香味", "pos": "n.", "ipa": "/smel/" },
+        "of": { "zh": "……的", "pos": "prep.", "ipa": "/əv/" },
+        "fresh": { "zh": "新鲜的", "pos": "adj.", "ipa": "/freʃ/" },
+        "bread": { "zh": "面包", "pos": "n.", "ipa": "/bred/" },
+        "followed": { "zh": "跟随（follow 的过去式）", "pos": "v.", "ipa": "/ˈfɑːloʊd/" },
+        "her": { "zh": "她（宾格）", "pos": "pron.", "ipa": "/hɜːr/" },
+        "for": { "zh": "持续（一段时间）", "pos": "prep.", "ipa": "/fɔːr/" },
+        "two": { "zh": "二；两个", "pos": "num.", "ipa": "/tuː/" },
+        "whole": { "zh": "整个的", "pos": "adj.", "ipa": "/hoʊl/" },
+        "blocks": { "zh": "街区（block 的复数）", "pos": "n.", "ipa": "/blɑːks/" }
+      }
+    },
+    {
+      "en": "She promised herself to stop there on the way home.",
+      "zh": "她对自己说好，回家路上要在那儿停一下。",
+      "words": {
+        "she": { "zh": "她", "pos": "pron.", "ipa": "/ʃiː/" },
+        "promised": { "zh": "承诺（promise 的过去式）", "pos": "v.", "ipa": "/ˈprɑːmɪst/" },
+        "herself": { "zh": "她自己", "pos": "pron.", "ipa": "/hərˈself/" },
+        "to": { "zh": "去（不定式标记）", "pos": "prep.", "ipa": "/tuː/" },
+        "stop": { "zh": "停下；停留", "pos": "v.", "ipa": "/stɑːp/" },
+        "there": { "zh": "那里", "pos": "adv.", "ipa": "/ðer/" },
+        "on": { "zh": "在……时", "pos": "prep.", "ipa": "/ɑːn/" },
+        "the": { "zh": "这；该（定冠词）", "pos": "art.", "ipa": "/ðə/" },
+        "way": { "zh": "路；途中", "pos": "n.", "ipa": "/weɪ/" },
+        "home": { "zh": "家；回家", "pos": "n.", "ipa": "/hoʊm/" }
+      }
+    }
+  ]
+}

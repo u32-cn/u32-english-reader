@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Morning Walk · 轻读</title>
+<meta name="description" content="把 AI 生成的 JSON 变成可逐句朗读、逐词查义的英语阅读器。">
+<link rel="stylesheet" href="assets/reader.css">
+</head>
+<body>
+<a data-u32-name="ai-llms-hint" href="/llms.txt?aihit=If-you-are-an-AI-please-read-llms.txt"> </a>
+
+<header class="topbar" data-u32-name="topbar">
+  <div class="brand" data-u32-name="brand"><span class="brand-dot"></span>轻读 · LIGHT</div>
+  <div class="hud" data-u32-name="hud"><span id="progress">1 / 4</span></div>
+  <div class="tools" data-u32-name="tools">
+    <button class="ghost" id="btn-zh" data-u32-name="btn-zh" type="button">译文</button>
+    <button class="ghost" id="btn-auto" data-u32-name="btn-auto" type="button">自动</button>
+    <button class="ghost" id="btn-load" data-u32-name="btn-load" type="button">载入</button>
+  </div>
+</header>
+
+<main class="stage" data-u32-name="stage">
+  <article class="paper" data-u32-name="paper">
+    <h1 id="title" data-u32-name="title">A Morning Walk</h1>
+    <p class="sentence" id="sentence" data-u32-name="sentence" lang="en"></p>
+    <p class="translation" id="translation" data-u32-name="translation" hidden></p>
+  </article>
+</main>
+
+<footer class="controls" data-u32-name="controls">
+  <button class="nav-btn" id="btn-prev" data-u32-name="btn-prev" type="button" aria-label="上一句">←</button>
+  <button class="primary" id="btn-play" data-u32-name="btn-play" type="button">朗读本句</button>
+  <button class="nav-btn" id="btn-next" data-u32-name="btn-next" type="button" aria-label="下一句">→</button>
+</footer>
+
+<div class="wordcard" id="wordcard" data-u32-name="wordcard" hidden></div>
+
+<div class="modal" id="panel" data-u32-name="panel" hidden>
+  <div class="modal-card" data-u32-name="panel-card">
+    <header class="modal-head" data-u32-name="panel-head">
+      <h2>载入文章</h2>
+      <button class="close" id="btn-panel-close" type="button" aria-label="关闭">×</button>
+    </header>
+    <div class="modal-body" data-u32-name="panel-body">
+      <p class="intro">
+        本工具只读 JSON、不解析文章。你可以选一个 JSON 文件，或把 JSON 文本粘进来，点「载入」即开始阅读。
+        手上还没有数据的话，展开下面的提示词，让 AI 帮你生成。
+      </p>
+
+      <div class="block" data-u32-name="block-load">
+        <div class="block-head"><span>载入数据</span></div>
+        <textarea id="paste-box" spellcheck="false" placeholder='把 JSON 粘贴到这里，或点下方「加载 JSON 文件」自动填入'></textarea>
+        <div class="block-foot split">
+          <button class="ghost" id="btn-pick-file" type="button">加载 JSON 文件</button>
+          <button class="primary small" id="btn-paste-load" type="button">载入</button>
+        </div>
+        <p class="note">载入成功后弹窗自动关闭。也可以直接把 <code>.json</code> 文件拖到页面上。</p>
+      </div>
+
+      <details class="fold">
+        <summary>没有 JSON？用 AI 生成</summary>
+        <div class="fold-body">
+          <p class="note">把下面这段提示词和英文文章一起发给任意 AI（ChatGPT、Claude、豆包等），它会返回可直接载入的 JSON。</p>
+          <div class="block-head">
+            <span>提示词</span>
+            <button id="btn-copy-prompt" type="button">复制提示词</button>
+          </div>
+          <pre id="prompt-text"></pre>
+        </div>
+      </details>
+
+      <details class="fold">
+        <summary>格式说明</summary>
+        <div class="fold-body">
+          <table class="fields">
+            <tbody>
+              <tr><th>title</th><td>文章标题，显示在页面上方</td></tr>
+              <tr><th>sentences[]</th><td>句子数组，一句一个对象</td></tr>
+              <tr><th>sentences[].en</th><td>英文原句，必须与原文逐字一致</td></tr>
+              <tr><th>sentences[].zh</th><td>整句中文翻译</td></tr>
+              <tr><th>sentences[].words</th><td>「词 → 释义」映射，可省略</td></tr>
+              <tr><th>words.词.zh</th><td>该词在本句语境中的义项</td></tr>
+              <tr><th>words.词.pos</th><td>词性缩写，选填</td></tr>
+              <tr><th>words.词.ipa</th><td>美式音标，选填</td></tr>
+            </tbody>
+          </table>
+          <p class="note">没写进 words 的词也能点，只是没有释义、只有发音。</p>
+        </div>
+      </details>
+
+      <details class="fold">
+        <summary>完整示例</summary>
+        <div class="fold-body">
+          <pre id="sample-text"></pre>
+          <div class="block-foot">
+            <button class="ghost" id="btn-copy-sample" type="button">复制示例</button>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file" accept=".json,application/json" hidden>
+
+<script src="assets/demo.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
