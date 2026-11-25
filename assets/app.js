@@ -56,6 +56,27 @@
   var STORE_KEY = "en-reader.state.v1";
   var WORD_RE = /[A-Za-z]+(?:['’\-][A-Za-z]+)*|\d+(?:[.,:]\d+)*/g;
 
+  var LOG_ENABLED = true;
+  var LOG_PREFIX = "[LIGHT]";
+  var VOICE_RETRY_MAX = 30;
+  var VOICE_RETRY_MS = 100;
+  var voiceRetryCount = 0;
+  var voiceRetryTimer = 0;
+
+  function log() {
+    if (!LOG_ENABLED) return;
+    var args = Array.prototype.slice.call(arguments);
+    args.unshift(LOG_PREFIX);
+    console.log.apply(console, args);
+  }
+
+  function logError() {
+    if (!LOG_ENABLED) return;
+    var args = Array.prototype.slice.call(arguments);
+    args.unshift(LOG_PREFIX + " ERROR");
+    console.error.apply(console, args);
+  }
+
   var state = { idx: 0, showZh: false, auto: false, mask: false, data: null, voiceURI: "", rate: 1 };
   var voice = null;
   var toastTimer = 0;
@@ -108,6 +129,8 @@
 
   function render() {
     var s = state.data.sentences[state.idx];
+    log("render: idx", state.idx, "title", state.data.title,
+      "showZh", state.showZh, "auto", state.auto, "mask", state.mask, "rate", state.rate);
     $("title").textContent = state.data.title;
     document.title = state.data.title + " · 轻读";
     $("sentence").innerHTML = tokenize(s.en, s.words);
@@ -144,6 +167,7 @@
 
   /* ---------- 词卡 ---------- */
   function openCard(el) {
+    log("openCard:", el.textContent, "key", el.getAttribute("data-w"));
     var key = el.getAttribute("data-w");
     var s = state.data.sentences[state.idx];
     var def = s.words[key];
@@ -207,25 +231,57 @@
     });
   }
 
+  function resetVoiceRetry() {
+    voiceRetryCount = 0;
+    if (voiceRetryTimer) { clearTimeout(voiceRetryTimer); voiceRetryTimer = 0; }
+  }
+
   function pickVoice() {
     var vs = allEnglishVoices();
-    if (!vs.length) return;
+    log("pickVoice: attempt", voiceRetryCount, "voices", vs.length, "saved", state.voiceURI || "(none)");
+    if (!vs.length) {
+      log("pickVoice: no English voices yet");
+      return false;
+    }
     if (state.voiceURI) {
       var saved = vs.filter(function (v) {
         return (v.voiceURI || v.name) === state.voiceURI;
       })[0];
-      if (saved) { voice = saved; return; }
+      if (saved) {
+        voice = saved;
+        resetVoiceRetry();
+        log("pickVoice: restored saved voice", saved.name, saved.lang);
+        return true;
+      }
+      if (voiceRetryCount < VOICE_RETRY_MAX) {
+        voiceRetryCount++;
+        log("pickVoice: saved voice not loaded yet, retry", voiceRetryCount + "/" + VOICE_RETRY_MAX,
+          "current:", vs.map(function (v) { return v.name + " · " + v.lang; }));
+        if (voiceRetryTimer) clearTimeout(voiceRetryTimer);
+        voiceRetryTimer = setTimeout(function () {
+          voiceRetryTimer = 0;
+          populateVoices();
+        }, VOICE_RETRY_MS);
+        return false;
+      }
+      log("pickVoice: saved voice still missing after retries, fallback", state.voiceURI);
     }
     voice = vs.filter(function (v) { return /^en[-_]US/i.test(v.lang); })[0] ||
       vs.filter(function (v) { return /^en[-_]GB/i.test(v.lang); })[0] ||
       vs[0];
+    if (!voice) { log("pickVoice: no usable voice"); return false; }
+    var previous = state.voiceURI;
     state.voiceURI = voice.voiceURI || voice.name;
+    resetVoiceRetry();
+    log("pickVoice: fallback voice", voice.name, voice.lang, "from", previous || "(none)");
+    return true;
   }
 
   function populateVoices() {
     var sel = $("sel-voice");
     if (!sel) return;
     var vs = allEnglishVoices();
+    log("populateVoices: start", vs.length, "English voice(s), saved:", state.voiceURI || "(none)");
     sel.innerHTML = "";
     if (!vs.length) {
       var o = document.createElement("option");
@@ -233,6 +289,7 @@
       o.textContent = "系统暂无英语语音";
       sel.appendChild(o);
       sel.disabled = true;
+      log("populateVoices: no voices, select disabled");
       return;
     }
     sel.disabled = false;
@@ -244,6 +301,15 @@
     });
     pickVoice();
     if (voice) sel.value = voice.voiceURI || voice.name;
+    else if (state.voiceURI) {
+      var pending = document.createElement("option");
+      pending.value = state.voiceURI;
+      pending.textContent = "保存的音色（加载中…）";
+      sel.insertBefore(pending, sel.firstChild);
+      sel.value = state.voiceURI;
+      log("populateVoices: showing pending saved voice", state.voiceURI);
+    }
+    log("populateVoices: done, selected:", sel.value || "(none)");
   }
 
   function renderRate() {
@@ -254,10 +320,14 @@
   }
 
   function speak(text) {
+    log("speak: start", JSON.stringify(text), "rate", state.rate,
+      "voice", voice ? voice.name + " · " + voice.lang : "(system default)");
     if (!("speechSynthesis" in window)) {
+      logError("speak: speechSynthesis unsupported");
       toast("当前浏览器不支持语音合成，请换用 Chrome / Edge");
       return;
     }
+    if (!voice) log("speak: voice not ready, using system default");
     window.speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(text);
     u.lang = "en-US";
@@ -273,8 +343,8 @@
       });
       if (hit) hit.classList.add("reading");
     };
-    u.onend = clearReading;
-    u.onerror = clearReading;
+    u.onend = function () { log("speak: end", JSON.stringify(text)); clearReading(); };
+    u.onerror = function (e) { logError("speak: error", e, "text", JSON.stringify(text)); clearReading(); };
     window.speechSynthesis.speak(u);
   }
 
@@ -287,13 +357,18 @@
   /* ---------- 导航 ---------- */
   function go(delta) {
     var next = state.idx + delta;
-    if (next < 0 || next >= state.data.sentences.length) return;
+    if (next < 0 || next >= state.data.sentences.length) {
+      log("go: ignored, out of range", delta, "from", state.idx);
+      return;
+    }
+    log("go:", delta, "from", state.idx, "to", next);
     state.idx = next;
     render();
   }
 
   /* ---------- 载入数据 ---------- */
   function applyData(obj, sourceLabel) {
+    log("applyData:", sourceLabel || "(none)", "title", obj.title, "sentences", obj.sentences.length);
     state.data = obj;
     state.idx = 0;
     render();
@@ -307,7 +382,7 @@
       $("paste-box").value = String(fr.result);
       toast("已读取 " + file.name + "，检查后点「载入」");
     };
-    fr.onerror = function () { toast("文件读取失败"); };
+    fr.onerror = function () { logError("file read failed:", file && file.name); toast("文件读取失败"); };
     fr.readAsText(file);
   }
 
@@ -319,12 +394,13 @@
       try {
         parsed = normalize(JSON.parse(String(fr.result)));
       } catch (err) {
+        logError("load JSON failed:", err);
         toast("载入失败：" + err.message);
         return;
       }
       applyData(parsed, file.name);
     };
-    fr.onerror = function () { toast("文件读取失败"); };
+    fr.onerror = function () { logError("file read failed:", file && file.name); toast("文件读取失败"); };
     fr.readAsText(file);
   }
 
@@ -339,6 +415,7 @@
     try {
       parsed = normalize(JSON.parse(text));
     } catch (err) {
+      logError("load pasted JSON failed:", err);
       toast("载入失败：" + err.message);
       return;
     }
@@ -417,17 +494,19 @@
   /* ---------- 进度记忆 ---------- */
   function persist() {
     try {
-      localStorage.setItem(STORE_KEY, JSON.stringify({
+      var saved = {
         idx: state.idx, showZh: state.showZh, auto: state.auto, mask: state.mask,
         voiceURI: state.voiceURI, rate: state.rate
-      }));
-    } catch (e) { /* 隐私模式忽略 */ }
+      };
+      localStorage.setItem(STORE_KEY, JSON.stringify(saved));
+      log("persist: saved", saved);
+    } catch (e) { logError("persist failed:", e); }
   }
 
   function restore() {
     try {
       var raw = localStorage.getItem(STORE_KEY);
-      if (!raw) return;
+      if (!raw) { log("restore: no saved state"); return; }
       var v = JSON.parse(raw);
       if (v && typeof v.idx === "number") state.idx = v.idx;
       state.showZh = !!(v && v.showZh);
@@ -437,14 +516,20 @@
       if (v && typeof v.rate === "number") {
         state.rate = Math.min(2, Math.max(0.5, Math.round(v.rate * 10) / 10));
       }
-    } catch (e) { /* 忽略 */ }
+      log("restore: loaded", {
+        idx: state.idx, showZh: state.showZh, auto: state.auto,
+        mask: state.mask, voiceURI: state.voiceURI, rate: state.rate
+      });
+    } catch (e) { logError("restore failed:", e); }
   }
 
   /* ---------- 装配 ---------- */
   function init() {
+    log("init: start", document.readyState, location.href);
     try {
       state.data = normalize(window.DEMO_DATA);
     } catch (err) {
+      logError("demo data invalid:", err);
       $("sentence").textContent = "示例数据异常：" + err.message;
       return;
     }
@@ -468,42 +553,51 @@
     /* ?src= 载入同源 JSON；demo 数据先渲染作兜底 */
     var srcParam = new URLSearchParams(location.search).get("src");
     if (srcParam) {
+      log("src: requested", srcParam);
       var srcUrl = null;
       try {
         srcUrl = new URL(srcParam, location.href);
       } catch (err) {
+        logError("src: invalid URL", srcParam, err);
         toast("src 参数不是合法 URL");
       }
       if (srcUrl && srcUrl.origin !== location.origin) {
+        logError("src: cross-origin rejected", srcUrl.href, location.origin);
         toast("src 只允许同源 URL");
       } else if (srcUrl) {
         fetch(srcUrl.href).then(function (r) {
+          log("src: fetch status", r.status, srcUrl.href);
           if (!r.ok) throw new Error("HTTP " + r.status);
           return r.json();
         }).then(function (raw) {
+          log("src: JSON parsed");
           state.data = normalize(raw);
           if (state.idx >= state.data.sentences.length) state.idx = 0;
           render();
           toast("已载入 URL 文章：" + state.data.title);
         }).catch(function (err) {
+          logError("src load failed:", srcUrl && srcUrl.href, err);
           toast("URL 载入失败：" + err.message);
         });
       }
     }
 
     $("btn-zh").addEventListener("click", function () {
+      log("toggle showZh:", state.showZh, "->", !state.showZh);
       state.showZh = !state.showZh;
       this.classList.toggle("active", state.showZh);
       render();
     });
 
     $("btn-mask").addEventListener("click", function () {
+      log("toggle mask:", state.mask, "->", !state.mask);
       state.mask = !state.mask;
       render();
       toast(state.mask ? "遮挡已开启" : "遮挡已关闭");
     });
 
     $("btn-auto").addEventListener("click", function () {
+      log("toggle auto:", state.auto, "->", !state.auto);
       state.auto = !state.auto;
       this.classList.toggle("active", state.auto);
       if (state.auto) speak(state.data.sentences[state.idx].en);
@@ -526,15 +620,18 @@
       var picked = allEnglishVoices().filter(function (v) {
         return (v.voiceURI || v.name) === key;
       })[0];
-      if (!picked) return;
+      if (!picked) { logError("sel-voice: selected voice not available:", key); return; }
+      log("sel-voice: change", state.voiceURI || "(none)", "->", picked.name, picked.lang);
       voice = picked;
       state.voiceURI = key;
+      resetVoiceRetry();
       persist();
       toast("已切换音色：" + picked.name);
     });
     $("range-rate").addEventListener("input", function () {
       var val = parseFloat(this.value);
-      if (!isFinite(val)) return;
+      if (!isFinite(val)) { logError("range-rate: invalid value", this.value); return; }
+      log("range-rate: change", state.rate, "->", val);
       state.rate = val;
       renderRate();
       persist();
@@ -567,24 +664,33 @@
     });
 
     document.addEventListener("keydown", function (e) {
+      log("keydown:", e.key, "repeat", e.repeat,
+        "target", e.target ? e.target.tagName + "." + (e.target.className || "") : "(none)");
       if (e.key === "Escape") {
-        if (!$("panel").hidden) { closePanel(); return; }
-        if (!$("voice-pop").hidden) { closePopover(); return; }
+        if (!$("panel").hidden) { log("keydown: Escape closes panel"); closePanel(); return; }
+        if (!$("voice-pop").hidden) { log("keydown: Escape closes popover"); closePopover(); return; }
         closeCard();
         return;
       }
-      if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
-      if (!$("panel").hidden) return;
+      if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) {
+        log("keydown: ignored, input/select/textarea focused");
+        return;
+      }
+      if (!$("panel").hidden) { log("keydown: ignored, panel open"); return; }
       var isRateKey = e.key === "ArrowUp" || e.key === "ArrowDown";
-      if (!$("voice-pop").hidden && !isRateKey) return;
+      if (!$("voice-pop").hidden && !isRateKey) {
+        log("keydown: ignored, popover open and not rate key");
+        return;
+      }
       if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
       else if (isRateKey) {
         e.preventDefault();
-        if (e.repeat) return;
+        if (e.repeat) { log("keydown: ignored, repeat rate key"); return; }
         var delta = e.key === "ArrowUp" ? 0.1 : -0.1;
         var next = Math.min(2, Math.max(0.5, Math.round((state.rate + delta) * 10) / 10));
         var atLimit = next === state.rate;
+        log("rate key:", e.key, state.rate, "->", next, atLimit ? "(limit)" : "");
         state.rate = next;
         renderRate();
         persist();
@@ -592,9 +698,12 @@
           (atLimit ? (next === 2 ? "（最大）" : "（最小）") : ""));
       }
       else if (e.key === " ") {
-        if (e.repeat) return;
+        if (e.repeat) { log("keydown: ignored, repeat space"); return; }
         var t = e.target;
-        if (t && t.closest && (t.closest(".w") || t.closest("button") || t.closest("a"))) return;
+        if (t && t.closest && (t.closest(".w") || t.closest("button") || t.closest("a"))) {
+          log("keydown: space handled by focused interactive element");
+          return;
+        }
         e.preventDefault();
         speak(state.data.sentences[state.idx].en);
       }
