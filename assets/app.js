@@ -574,9 +574,23 @@
         return;
       }
       if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
-      if (!$("panel").hidden || !$("voice-pop").hidden) return;
+      if (!$("panel").hidden) return;
+      var isRateKey = e.key === "ArrowUp" || e.key === "ArrowDown";
+      if (!$("voice-pop").hidden && !isRateKey) return;
       if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+      else if (isRateKey) {
+        e.preventDefault();
+        if (e.repeat) return;
+        var delta = e.key === "ArrowUp" ? 0.1 : -0.1;
+        var next = Math.min(2, Math.max(0.5, Math.round((state.rate + delta) * 10) / 10));
+        var atLimit = next === state.rate;
+        state.rate = next;
+        renderRate();
+        persist();
+        toast("语速 " + state.rate.toFixed(1) + "×" +
+          (atLimit ? (next === 2 ? "（最大）" : "（最小）") : ""));
+      }
       else if (e.key === " ") {
         if (e.repeat) return;
         var t = e.target;
