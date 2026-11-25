@@ -18,7 +18,7 @@
 
 1. 把 JSON 写到本地文件。用户未指定位置时，默认写到 `~/.u32-english-reader/articles/`，文件名用 `YYYYMMDD-HHMMSS-<主题名>.json`（时间戳取当前本地时间；主题名不含空格，可用 `_`）。目录不存在先创建。
 2. 确保本地 HTTP 服务已启动：`npx u32-local-server start`（幂等）。
-3. 交付时明确告诉用户 JSON 文件的绝对路径，并检查 u32-local-server 是否允许读取：`curl -s -o /dev/null -w "%{http_code}" <文件URL>` 返回 403 就是未允许。未允许则加入允许列表：编辑 `~/.u32-local-server/config/main.json` 的 `file.access.allow`，加 `{"path":"~/.u32-english-reader/articles/","write":false}`（或打开 `http://localhost:19527/config` 页面添加），然后执行 `npx u32-local-server restart`。实测 `/file/` 权限在重启后才生效。
+3. 交付时明确告诉用户 JSON 文件的绝对路径，并检查 u32-local-server 是否允许读取：`curl -s -o /dev/null -w "%{http_code}" <文件URL>` 返回 403 就是未允许。此时**只提示用户**去处理：打开 `http://localhost:19527/config` → 允许列表 → 添加该目录（只读即可），保存后重启服务。AI 不要直接修改 `~/.u32-local-server/config/main.json`。
 4. 取该文件的本地 URL：`npx u32-local-server url <文件路径>`，得到 `http://localhost:19527/file/...`。
 5. 用代理方式打开阅读页并带上 `src` 参数：
    `http://localhost:19527/proxy/https://u32-english-reader.u32.cn/?src=<第4步URL的encodeURIComponent结果>`
