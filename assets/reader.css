@@ -134,6 +134,16 @@ button { font: inherit; cursor: pointer; }
   accent-color: var(--accent);
 }
 .popover .wide { width: 100%; margin-top: 12px; }
+.voice-hint {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  background: #f5f8fa;
+  border-radius: 9px;
+  padding: 8px 10px;
+  margin: 10px 0 0;
+}
+.voice-hint a { color: var(--accent); }
 
 /* ---------- 正文 ---------- */
 .stage {

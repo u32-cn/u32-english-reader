@@ -2,13 +2,13 @@
 
 把一个 JSON 变成可逐句朗读、逐词查义的英语阅读页。JSON 由你用 AI 生成，工具本身不解析、不改写文章。
 
-启动：双击 `index.html`，无需安装、无需联网。
+启动：浏览器打开线上网页 http://u32-english-reader.u32.cn/ ；本地/离线部署时双击 `index.html` 同样可用，无需安装、无需联网。
 
 <a href="assets/help/8.jpg" target="_blank" rel="noopener"><img src="assets/help/8.jpg" width="640" alt="阅读页与音色列表示例"></a>
 
 ## 特点
 
-- **只用浏览器**：无后端、无构建、无依赖，双击 `index.html` 就能用
+- **只用浏览器**：无后端、无构建、无依赖；线上网页直接用，本地部署双击 `index.html` 就能用
 - **逐句朗读**：Web Speech 朗读整句，朗读时逐词高亮
 - **听力遮挡**：顶栏「遮挡」用磨玻璃盖住英文，译文不受影响，状态自动记住
 - **音色与语速可调**：顶栏「音色」里选系统英语语音、拖动语速（0.5×–2.0×），设置自动记住
@@ -20,7 +20,7 @@
 
 ## 使用
 
-1. 打开 `index.html`（双击即可）。
+1. 打开阅读器：线上网页 http://u32-english-reader.u32.cn/ ，或本地双击 `index.html`。
 2. 点顶部「载入」，展开「没有 JSON？用 AI 生成」，复制提示词。
 3. 把提示词和英文文章一起发给任意 AI，拿到 JSON。
 4. 回到「载入」面板，粘贴 JSON 或点「加载 JSON 文件」，再点「载入」。
@@ -48,7 +48,7 @@
 
 ```
 index.html          页面
-help.html           帮助页面（离线语音配置图文步骤）
+help.html           帮助中心（快速上手 / 功能 / 快捷键 / 离线语音 / FAQ / 数据格式）
 assets/reader.css   样式
 assets/app.js       交互逻辑
 assets/demo.js      内置示例数据

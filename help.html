@@ -3,33 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>离线语音帮助 · 轻读</title>
-<meta name="description" content="轻读朗读很慢时，如何切换到 Windows 本地离线语音。">
+<title>帮助中心 · 轻读</title>
+<meta name="description" content="轻读英语阅读器帮助中心：快速上手、功能详解、快捷键、离线语音配置与常见问题。">
 <link rel="stylesheet" href="assets/reader.css?v=20261125d">
 <style>
   .help { width: min(920px, 100%); margin: 0 auto; padding: 8px 20px 56px; }
-  .hero { text-align: center; padding: 26px 0 30px; }
+  .hero { text-align: center; padding: 26px 0 24px; }
   .kicker { font-size: 12px; letter-spacing: .22em; color: var(--accent); font-weight: 600; }
-  .hero h1 { font-size: clamp(26px, 4vw, 38px); line-height: 1.25; margin: 10px 0 12px; text-transform: none; letter-spacing: 0; }
+  .hero h1 { font-size: clamp(26px, 4vw, 38px); line-height: 1.25; margin: 10px 0 12px; letter-spacing: 0; }
   .lead { font-size: 15px; line-height: 1.8; color: #4f6272; margin: 0 auto; max-width: 700px; }
-  .answer {
-    max-width: 720px; margin: 22px auto 0; text-align: left;
-    background: #eef8f6; border: 1px solid #cfe8e3; border-left: 4px solid var(--accent);
-    border-radius: 12px; padding: 14px 18px; font-size: 14px; line-height: 1.75;
+
+  .nav {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 10px 16px; margin: 0 auto 10px; max-width: 760px;
   }
-  .answer b { color: var(--accent); margin-right: 8px; }
+  .nav a {
+    font-size: 13px; color: #4f6272; text-decoration: none;
+    padding: 5px 13px; border-radius: 999px;
+  }
+  .nav a:hover { background: #eef8f6; color: var(--accent); }
+
   .card {
     background: #fff; border: 1px solid var(--line); border-radius: 18px;
-    padding: 24px 26px; margin: 0 0 18px; box-shadow: 0 10px 30px rgba(23, 62, 86, .07);
+    padding: 24px 26px; margin: 18px 0; box-shadow: 0 10px 30px rgba(23, 62, 86, .07);
+    scroll-margin-top: 76px;
   }
-  .card h2 { font-size: 18px; margin: 0 0 14px; display: flex; align-items: center; gap: 10px; }
+  .card h2 { font-size: 19px; margin: 0 0 14px; display: flex; align-items: center; gap: 10px; }
   .num {
     flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent);
     color: #fff; font-size: 13px; display: grid; place-items: center;
   }
+  .card h3 { font-size: 15px; margin: 18px 0 8px; color: var(--ink); }
   .card p { font-size: 14px; line-height: 1.8; color: #435667; }
-  ol.steps { margin: 14px 0 0; padding-left: 22px; }
-  ol.steps li { font-size: 14px; line-height: 1.8; margin-bottom: 7px; }
+  ol.steps, ul.plain { margin: 10px 0 0; padding-left: 22px; }
+  ol.steps li, ul.plain li { font-size: 14px; line-height: 1.8; margin-bottom: 6px; }
   figure { margin: 18px 0 0; }
   figure img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 12px; }
   figcaption { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
@@ -37,9 +47,10 @@
     margin-top: 14px; background: #f5f8fa; border-radius: 10px;
     padding: 11px 14px; font-size: 13px; line-height: 1.7; color: #4f6272;
   }
-  .path { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .tip b { color: var(--accent); }
+  .path { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 8px; }
   .path article { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
-  .path h3 { font-size: 14px; margin: 0 0 10px; color: var(--ink); }
+  .path h4 { font-size: 14px; margin: 0 0 10px; color: var(--ink); }
   .path img { width: 100%; display: block; border: 1px solid var(--line); border-radius: 10px; }
   .path p { font-size: 13px; margin: 10px 0 0; line-height: 1.7; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0; }
@@ -47,6 +58,38 @@
   .warn { border-color: #f0d0cf; background: #fffafa; }
   .check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.8; }
   .check .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 9px; }
+
+  table.keys { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+  table.keys th, table.keys td { border: 1px solid var(--line); padding: 9px 12px; text-align: left; line-height: 1.6; }
+  table.keys th { background: #f2f6f9; font-size: 13px; color: #4f6272; }
+  table.keys td:first-child { white-space: nowrap; }
+  kbd {
+    display: inline-block; background: #f2f6f9; border: 1px solid var(--line);
+    border-bottom-width: 2px; border-radius: 6px; padding: 1px 8px;
+    font-family: inherit; font-size: 13px; color: var(--ink);
+  }
+
+  details.fold { border: 1px solid var(--line); border-radius: 12px; margin: 10px 0; background: #fff; }
+  details.fold summary {
+    cursor: pointer; padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--ink);
+    list-style: none; display: flex; align-items: center; gap: 8px;
+  }
+  details.fold summary::before { content: "+"; color: var(--accent); font-weight: 700; }
+  details.fold[open] summary::before { content: "−"; }
+  details.fold .fold-body { padding: 0 16px 14px; font-size: 13.5px; line-height: 1.8; color: #435667; }
+  details.fold .fold-body p { margin: 0 0 8px; }
+
+  pre.code {
+    background: #f5f8fa; border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; font-size: 12.5px; line-height: 1.6; overflow-x: auto;
+    white-space: pre; margin: 10px 0 0;
+  }
+  .answer {
+    max-width: 720px; margin: 20px auto 0; text-align: left;
+    background: #eef8f6; border: 1px solid #cfe8e3; border-left: 4px solid var(--accent);
+    border-radius: 12px; padding: 14px 18px; font-size: 14px; line-height: 1.75;
+  }
+  .answer b { color: var(--accent); margin-right: 8px; }
   img.zoomable { cursor: zoom-in; }
   .lightbox {
     position: fixed; inset: 0; z-index: 100; background: rgba(15, 32, 45, .86);
@@ -70,7 +113,8 @@
   @media (max-width: 640px) {
     .path { grid-template-columns: 1fr; }
     .card { padding: 18px; }
-    .hero { padding: 18px 0 24px; }
+    .hero { padding: 18px 0 20px; }
+    table.keys td:first-child { white-space: normal; }
   }
 </style>
 </head>
@@ -83,19 +127,110 @@
 
 <main class="help">
   <section class="hero">
-    <div class="kicker">帮助 / 朗读</div>
-    <h1>朗读很慢？换成离线语音</h1>
-    <p class="lead">音色列表里带 <b>Online / Online (Natural)</b> 的语音走在线合成，每次朗读都要联网请求。网络一慢，首字延迟就很明显。</p>
-    <div class="answer"><b>一句话</b>选 <code>Microsoft Mark</code> / <code>Zira</code> / <code>David</code>（en-US，名字里没有 Online），朗读就不走网络。你截图里这三个已经装好了。</div>
+    <div class="kicker">帮助中心</div>
+    <h1>轻读 · 使用帮助</h1>
+    <p class="lead">纯浏览器英语阅读器：AI 生成的 JSON 文章，逐句朗读、逐词查义、听力遮挡。无后端、无安装、断网可用。</p>
+    <div class="answer"><b>最快上手</b>打开网页 <code>http://u32-english-reader.u32.cn/</code> → 顶部「载入」→ 复制 AI 提示词发给任意 AI → 把返回的 JSON 粘贴回来，点「载入」。也可以直接把 <code>.json</code> 文件拖到页面上。</div>
   </section>
 
-  <section class="card">
-    <h2><span class="num">1</span>已装好：直接切换（30 秒）</h2>
-    <p>适用：打开「音色」弹层后，能看到红框里的三个名字。不用再装任何东西。</p>
+  <nav class="nav">
+    <a href="#quick">快速上手</a>
+    <a href="#features">功能详解</a>
+    <a href="#keys">快捷键</a>
+    <a href="#voice">离线语音</a>
+    <a href="#faq">常见问题</a>
+    <a href="#schema">数据格式</a>
+  </nav>
+
+  <!-- ===================== 快速上手 ===================== -->
+  <section class="card" id="quick">
+    <h2><span class="num">1</span>快速上手</h2>
+
+    <h3>方式 A：手动载入 JSON</h3>
+    <ol class="steps">
+      <li>打开网页 <a href="http://u32-english-reader.u32.cn/" target="_blank" rel="noopener">u32-english-reader.u32.cn</a>（离线本地部署时，双击 <code>index.html</code> 同样可用）。</li>
+      <li>点顶部「载入」，展开「没有 JSON？用 AI 生成」，复制提示词。</li>
+      <li>把提示词和英文文章一起发给任意 AI（ChatGPT / Claude / WorkBuddy 均可），拿到 JSON。</li>
+      <li>回到「载入」面板：粘贴 JSON 文本，或点「加载 JSON 文件」选文件，再点「载入」。</li>
+      <li>也可以直接把 <code>.json</code> 文件拖到页面任意位置。</li>
+    </ol>
+
+    <h3>方式 B：链接自动载入（?src= 参数）</h3>
+    <p>适合配合本地 HTTP 服务使用：阅读页地址后加 <code>?src=&lt;JSON 的 URL&gt;</code>，页面会自动 fetch 并载入，失败只在页内提示、不白屏。注意 <code>src</code> 必须是同源绝对 URL；同名文件重复载入可能命中浏览器缓存，可在 URL 后加 <code>?t=&lt;时间戳&gt;</code> 绕过。</p>
+
+    <h3>生成 JSON 的字段规范</h3>
+    <p>完整规范和可直接复制的 AI 提示词见 <a href="schema.md">schema.md</a>。最小结构：</p>
+    <pre class="code">{
+  "title": "文章标题",
+  "sentences": [
+    { "en": "English sentence.", "zh": "中文翻译。",
+      "words": { "english": { "zh": "英文的", "pos": "adj.", "ipa": "/ˈɪŋɡlɪʃ/" } } }
+  ]
+}</pre>
+    <div class="tip"><b>提示</b>页面内置示例数据，「载入」面板里也有示例与示例文本可一键填入；完整示例文件是 <code>examples/demo.json</code>。</div>
+  </section>
+
+  <!-- ===================== 功能详解 ===================== -->
+  <section class="card" id="features">
+    <h2><span class="num">2</span>功能详解</h2>
+
+    <h3>逐句朗读 + 逐词高亮</h3>
+    <p>按 <kbd>空格</kbd> 朗读当前句，朗读进行到哪个词，哪个词就高亮。</p>
+
+    <h3>自动朗读</h3>
+    <p>顶栏「自动」开关：打开后每翻到一句就自动朗读，适合连续听读。状态会记住。</p>
+
+    <h3>翻译显示</h3>
+    <p>顶栏「译文」开关：控制当前句中文翻译的显示与隐藏。</p>
+
+    <h3>听力遮挡</h3>
+    <p>顶栏「遮挡」开关：用磨玻璃盖住英文原文，译文不受影响。先看中文回想英文，再点开验证，做听力/回译训练。状态自动记住。</p>
+
+    <h3>点词查义</h3>
+    <p>点击正文任意单词：立即发音，同时弹出词卡，含上下文义项、词性、音标和重听按钮。词表里没收录的词也能发音，只提示「无释义」，不会崩。</p>
+
+    <h3>音色与语速</h3>
+    <p>顶栏「音色」弹层里选系统英语语音、拖动语速（0.5×–2.0×）。<kbd>↑</kbd> <kbd>↓</kbd> 也能调语速（每次 0.1×，带状态提示）。设置自动记住，下次打开沿用。</p>
+
+    <h3>进度与状态记忆</h3>
+    <p>读到第几句、遮挡/译文/自动开关、音色、语速都存在浏览器 localStorage 里，刷新和重开浏览器都恢复。</p>
+
+    <h3>控制台日志</h3>
+    <p>浏览器控制台（F12）默认输出 <code>[LIGHT]</code> 日志，覆盖状态恢复、音色选择、按键与错误，排查问题直接看它。</p>
+  </section>
+
+  <!-- ===================== 快捷键 ===================== -->
+  <section class="card" id="keys">
+    <h2><span class="num">3</span>快捷键</h2>
+    <table class="keys">
+      <tr><th>按键</th><th>作用</th></tr>
+      <tr><td><kbd>→</kbd></td><td>下一句</td></tr>
+      <tr><td><kbd>←</kbd></td><td>上一句</td></tr>
+      <tr><td><kbd>↑</kbd></td><td>语速 +0.1×（上限 2.0×）</td></tr>
+      <tr><td><kbd>↓</kbd></td><td>语速 −0.1×（下限 0.5×）</td></tr>
+      <tr><td><kbd>空格</kbd></td><td>朗读当前句（长按不会重复触发）</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>依次关闭：载入面板 → 音色弹层 → 词卡</td></tr>
+      <tr><td><kbd>Enter</kbd> / <kbd>空格</kbd>（词卡上的词获得焦点时）</td><td>打开该词的词卡</td></tr>
+    </table>
+    <div class="tip"><b>失效场景</b>焦点在输入框 / 下拉框 / 按钮 / 链接上时，翻句、语速、朗读快捷键会被跳过（防止误触）。点一下页面空白处让焦点回到正文即可。另外载入面板打开时快捷键也不响应，先 <kbd>Esc</kbd> 关掉。</div>
+  </section>
+
+  <!-- ===================== 离线语音 ===================== -->
+  <section class="card" id="voice">
+    <h2><span class="num">4</span>朗读很慢或没声音？换离线语音</h2>
+    <p>网页朗读用的是浏览器向系统要来的语音，不同浏览器默认情况不一样，但症状都一样：慢，或者干脆没声。</p>
+    <table class="keys">
+      <tr><th>浏览器</th><th>默认语音情况</th><th>症状</th></tr>
+      <tr><td>Edge</td><td>默认带 <b>Online (Natural)</b> 在线语音，每次朗读都要联网请求微软服务器</td><td>点播放后半天才出声；断网直接没声音</td></tr>
+      <tr><td>Chrome</td><td>只有内置的「Google 普通话/英语」语音，走谷歌服务器，<b>中国国内通常根本连不上</b></td><td>选它朗读直接无声或报错；音色列表里几乎没有本地英语音色</td></tr>
+    </table>
+    <div class="answer"><b>解法相同</b>给 Windows 装上本地英语语音包，然后选 <code>Microsoft Mark</code> / <code>Zira</code> / <code>David</code>（en-US，名字里没有 Online），朗读就不走网络——Edge 里摆脱在线延迟，Chrome 里从「完全没声」变成正常朗读。</div>
+
+    <h3>已装好：直接切换（30 秒）</h3>
     <ol class="steps">
       <li>打开阅读器，点顶栏「音色」。</li>
       <li>选 <code>Microsoft Mark - English (United States) · en-US</code>（男声，推荐），或 <code>Zira</code>（女声）、<code>David</code>。</li>
-      <li>关掉弹层，按 <code>空格</code> 或点「朗读本句」试听。</li>
+      <li>关掉弹层，按 <kbd>空格</kbd> 试听。</li>
       <li>选择会记住，下次打开自动沿用。</li>
     </ol>
     <figure>
@@ -103,43 +238,32 @@
       <figcaption>8.jpg — 红框内是本地音色；下面带 Online (Natural) 的都是在线语音。点击图片可放大。</figcaption>
     </figure>
     <div class="tip">判断规则只有一条：<b>名字里带 Online 就别选</b>。本地音色标 <code>en-US</code>，断网也能读。</div>
-  </section>
 
-  <section class="card">
-    <h2><span class="num">2</span>没装过：从零安装英语语音</h2>
-    <p>换电脑、或音色列表里只有 Online 条目时，按下面四步装一次。装完以后朗读完全离线。下面图片点击可放大。</p>
+    <h3>没装过：从零安装英语语音（装一次即可）</h3>
     <div class="path">
       <article>
-        <h3>① 语言和区域</h3>
+        <h4>① 语言和区域</h4>
         <img class="zoomable" src="assets/help/3.jpg" alt="设置中的语言和区域页面，当前只有简体中文" loading="lazy">
         <p>打开 <b>设置 → 时间和语言 → 语言和区域</b>。图里系统只有简体中文，所以英语语音还没装。</p>
       </article>
       <article>
-        <h3>② 添加英语（美国）</h3>
+        <h4>② 添加英语（美国）</h4>
         <img class="zoomable" src="assets/help/4.jpg" alt="添加语言窗口，搜索 English 并选中 English United States" loading="lazy">
         <p>点「添加语言」→ 搜 <code>English</code> → 选 <b>English (United States)</b> → 下一步。</p>
       </article>
       <article>
-        <h3>③ 勾选文本到语音</h3>
+        <h4>③ 勾选文本到语音</h4>
         <img class="zoomable" src="assets/help/5.jpg" alt="安装语言功能窗口，勾选语言包和文本到语音" loading="lazy">
         <p>勾 <b>语言包</b> + <b>文本到语音</b>。语音识别、手写不需要可取消；别勾「设为显示语言」。</p>
       </article>
       <article>
-        <h3>④ 等安装完成</h3>
+        <h4>④ 等安装完成</h4>
         <img class="zoomable" src="assets/help/6.jpg" alt="语言安装进度页面，语言包和文本转语音正在下载" loading="lazy">
         <p>点「安装」，等进度走完。之后<b>关闭并重开 Chrome / Edge</b>，再打开页面音色列表。</p>
       </article>
     </div>
-    <details class="fold">
-      <summary>装完还是没有 Mark / Zira / David？</summary>
-      <div class="fold-body">
-        <p>去 <b>设置 → 时间和语言 → 语音 → 添加语音</b>，选 <code>English (United States)</code>；或先装完 Windows Update 再重启浏览器。</p>
-      </div>
-    </details>
-  </section>
 
-  <section class="card warn">
-    <h2>别选这些：带 Online 的都是在线语音</h2>
+    <h3>别选这些：带 Online 的都是在线语音</h3>
     <p>它们正是慢的来源，断网还会直接没声音。</p>
     <ul class="chips">
       <li>Microsoft WilliamMultilingual Online (Natural)</li>
@@ -150,20 +274,83 @@
       <li>任何带 Online 字样的条目</li>
     </ul>
     <div class="tip">Windows「讲述人」里的自然语音（Guy / Jenny / Aria）虽下载到本地，但网页语音接口里通常仍标为 <code>Online (Natural)</code>，延迟不可控，不建议用。</div>
-  </section>
 
-  <section class="card">
-    <h2><span class="num">✓</span>断网验证</h2>
+    <h3>断网验证</h3>
     <div class="check"><span class="dot"></span><span>选中 <code>Microsoft Mark</code>。</span></div>
     <div class="check"><span class="dot"></span><span>断开网络（关 Wi-Fi / 拔网线），刷新页面。</span></div>
-    <div class="check"><span class="dot"></span><span>按 <code>空格</code> 朗读：有声音 = 离线生效；没声音 = 当前还是在线音色，重选本地音色。</span></div>
-    <p style="margin-top:12px">体感差异：在线音色点下播放后有「等一下」的首字延迟；本地音色几乎立刻起声。</p>
+    <div class="check"><span class="dot"></span><span>按 <kbd>空格</kbd> 朗读：有声音 = 离线生效；没声音 = 当前还是在线音色，重选本地音色。</span></div>
+    <p style="margin-top:12px">体感差异：Edge 在线音色点下播放后有「等一下」的首字延迟，本地音色几乎立刻起声；Chrome 装好语音包前选 Google 语音是完全无声，装好后选 Mark / Zira 立刻有声。</p>
+  </section>
+
+  <!-- ===================== 常见问题 ===================== -->
+  <section class="card" id="faq">
+    <h2><span class="num">5</span>常见问题</h2>
+
+    <details class="fold">
+      <summary>打开页面只有示例文章，我自己的文章怎么载入？</summary>
+      <div class="fold-body"><p>示例数据是兜底显示。点顶部「载入」，粘贴你自己的 JSON 或选择 <code>.json</code> 文件后点「载入」即可覆盖；也可以把 <code>.json</code> 直接拖到页面上。</p></div>
+    </details>
+
+    <details class="fold">
+      <summary>载入失败，提示 JSON 格式错误？</summary>
+      <div class="fold-body">
+        <p>按顺序检查：顶层必须有 <code>title</code> 和 <code>sentences</code> 数组；每个 sentence 必须有 <code>en</code> 字符串；<code>words</code> 的键必须是<b>小写词形</b>；粘贴的内容不能带 markdown 代码块标记（<code>```json</code>）。对照 <a href="schema.md">schema.md</a> 逐条核对。</p>
+      </div>
+    </details>
+
+    <details class="fold">
+      <summary>完全没有声音？</summary>
+      <div class="fold-body"><p>分浏览器看：<b>Chrome</b> 默认的 Google 语音在国内通常连不上，选它必无声——按上方「从零安装英语语音」装本地语音包后改选 Mark / Zira。<b>Edge</b> 无声则多半是选了 Online 音色且断网，或系统没装英语语音包。装完记得重启浏览器。另外检查系统音量和标签页是否被静音（标签页右键 → 取消静音）。</p></div>
+    </details>
+
+    <details class="fold">
+      <summary>朗读特别慢、点下半天才出声？</summary>
+      <div class="fold-body"><p>当前选的是 Online 在线音色，每次朗读都要联网请求。换成本地音色（Mark / Zira / David）即可，见上方「离线语音」一节。</p></div>
+    </details>
+
+    <details class="fold">
+      <summary>按方向键 / 空格没反应？</summary>
+      <div class="fold-body"><p>焦点不在正文上。常见于刚点过按钮或输入框：点一下页面空白处再按。载入面板打开时快捷键也会被忽略，先 <kbd>Esc</kbd> 关闭。详见「快捷键」一节的失效场景说明。</p></div>
+    </details>
+
+    <details class="fold">
+      <summary>我的设置（音色 / 语速 / 遮挡）没被记住？</summary>
+      <div class="fold-body"><p>设置存在浏览器 localStorage。隐私/无痕模式、或浏览器设置了「关闭时清除站点数据」会导致记不住；换浏览器或换设备也不会同步。用正常窗口打开即可。</p></div>
+    </details>
+
+    <details class="fold">
+      <summary>词卡点开只发音、没有释义？</summary>
+      <div class="fold-body"><p>该词不在文章的 <code>words</code> 词表里。发音始终可用；要出释义，让 AI 生成 JSON 时把这个词补进对应句子的 <code>words</code> 映射，键用小写词形。</p></div>
+    </details>
+
+    <details class="fold">
+      <summary>一句话太长，读完要很久？</summary>
+      <div class="fold-body"><p>句子的切分由 JSON 决定。生成时在提示词里要求 AI 按自然句切分，别把整段塞进一个 <code>en</code>。已经生成的文件也可以手动把长句拆成多条 sentence。</p></div>
+    </details>
+
+    <details class="fold">
+      <summary><code>?src=</code> 自动载入没生效？</summary>
+      <div class="fold-body"><p>检查三点：<code>src</code> 必须是绝对 URL；必须与页面同源（跨域会被浏览器拦）；同名文件可能命中缓存，在 src 的 URL 后加 <code>?t=&lt;时间戳&gt;</code> 试试。失败时页面会提示，不会白屏。</p></div>
+    </details>
+  </section>
+
+  <!-- ===================== 数据格式 ===================== -->
+  <section class="card" id="schema">
+    <h2><span class="num">6</span>数据格式速查</h2>
+    <p>完整规范 + AI 提示词模板见 <a href="schema.md">schema.md</a>。核心约束：</p>
+    <ul class="plain">
+      <li>顶层：<code>title</code>（字符串）+ <code>sentences</code>（数组，必填）</li>
+      <li>每个 sentence：<code>en</code>（英文句，必填）、<code>zh</code>（中文翻译）、<code>words</code>（生词表）</li>
+      <li><code>words</code> 结构：<code>"小写词形": { "zh": "义项", "pos": "词性", "ipa": "音标" }</code></li>
+      <li>示例：<code>examples/demo.json</code>；页面内置的同份数据在 <code>assets/demo.js</code></li>
+    </ul>
+    <div class="tip"><b>给 AI 的话</b>如果让 AI 帮你生成文章，直接把 schema.md 里的「提示词模板」整段复制给它，字段和切分规则它都会遵守。</div>
   </section>
 
   <p class="help-foot">
-    依据 Microsoft 支持文档
-    <a href="https://support.microsoft.com/en-au/accessibility/windows/narrator/appendix-a-supported-languages-and-voices" target="_blank" rel="noopener">Appendix A: Supported languages and voices</a>
-    ——英语（美国）本地 TTS 语音为 David、Mark（男）与 Zira（女）。
+    轻读 · LIGHT — 纯浏览器英语阅读器 · MIT License ·
+    语音文档依据 <a href="https://support.microsoft.com/en-au/accessibility/windows/narrator/appendix-a-supported-languages-and-voices" target="_blank" rel="noopener">Microsoft 支持文档 Appendix A</a>
+    （英语本地 TTS：David、Mark 男声，Zira 女声）
   </p>
 </main>
 
