@@ -12,4 +12,21 @@
 
 要生成本工具能读的文章数据，请读取 `/schema.md` 的「提示词模板」一节，按其中的结构与规则输出 JSON。JSON 必须包含 `sentences` 数组，每项有 `en` 字符串；`words` 是「小写词形 → { zh, pos, ipa }」的映射。
 
-要为本项目生成新的阅读页面，直接复制 `index.html` 并替换 `assets/demo.js` 中的 `window.DEMO_DATA` 即可。
+## AI 交付协议（生成后直接打开阅读）
+
+不要再让用户复制提示词或粘贴 JSON。按以下步骤交付：
+
+1. 把 JSON 写到本地文件。用户未指定位置时，默认写到 `~/.u32-english-reader/articles/`，文件名用 `YYYYMMDD-HHMMSS-<主题名>.json`（时间戳取当前本地时间；主题名不含空格，可用 `_`）。目录不存在先创建。
+2. 确保本地 HTTP 服务已启动：`npx u32-local-server start`（幂等）。
+3. 交付时明确告诉用户 JSON 文件的绝对路径，并检查 u32-local-server 是否允许读取：`curl -s -o /dev/null -w "%{http_code}" <文件URL>` 返回 403 就是未允许。未允许则加入允许列表：编辑 `~/.u32-local-server/config/main.json` 的 `file.access.allow`，加 `{"path":"~/.u32-english-reader/articles/","write":false}`（或打开 `http://localhost:19527/config` 页面添加），然后执行 `npx u32-local-server restart`。实测 `/file/` 权限在重启后才生效。
+4. 取该文件的本地 URL：`npx u32-local-server url <文件路径>`，得到 `http://localhost:19527/file/...`。
+5. 用代理方式打开阅读页并带上 `src` 参数：
+   `http://localhost:19527/proxy/https://u32-english-reader.u32.cn/?src=<第4步URL的encodeURIComponent结果>`
+6. 页面会 fetch `src` 并自动载入；失败只在页面提示，不白屏。
+
+硬约束：
+
+- `src` 必须是同源于 `http://localhost:19527` 的绝对 URL（通常是 `/file/...`）。不能写相对路径，否则会被代理解析成公网站资源。
+- 同名文件重新生成可能命中浏览器缓存，建议在 file URL 后加 `?t=<当前时间戳>`。
+- u32-local-server 必须保持运行，代理链接才有效。
+- 旧方式仍可用：复制 `index.html` 并替换 `assets/demo.js` 中的 `window.DEMO_DATA`。

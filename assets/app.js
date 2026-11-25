@@ -458,6 +458,32 @@
     $("btn-auto").classList.toggle("active", state.auto);
     render();
 
+    /* ?src= 载入同源 JSON；demo 数据先渲染作兜底 */
+    var srcParam = new URLSearchParams(location.search).get("src");
+    if (srcParam) {
+      var srcUrl = null;
+      try {
+        srcUrl = new URL(srcParam, location.href);
+      } catch (err) {
+        toast("src 参数不是合法 URL");
+      }
+      if (srcUrl && srcUrl.origin !== location.origin) {
+        toast("src 只允许同源 URL");
+      } else if (srcUrl) {
+        fetch(srcUrl.href).then(function (r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        }).then(function (raw) {
+          state.data = normalize(raw);
+          if (state.idx >= state.data.sentences.length) state.idx = 0;
+          render();
+          toast("已载入 URL 文章：" + state.data.title);
+        }).catch(function (err) {
+          toast("URL 载入失败：" + err.message);
+        });
+      }
+    }
+
     $("btn-zh").addEventListener("click", function () {
       state.showZh = !state.showZh;
       this.classList.toggle("active", state.showZh);
