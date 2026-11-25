@@ -84,6 +84,8 @@ button { font: inherit; cursor: pointer; }
 }
 .ghost:hover { border-color: var(--accent); color: var(--accent); }
 .ghost.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ghost:disabled { opacity: .45; cursor: not-allowed; }
+.ghost:disabled:hover { border-color: var(--line); color: var(--muted); }
 .ghost.icon {
   width: 32px;
   height: 32px;
@@ -162,12 +164,29 @@ h1 {
   text-align: center;
 }
 .sentence {
+  position: relative;
   font-family: var(--font-en);
   font-size: var(--sentence-size);
   line-height: var(--sentence-lh);
   margin: 0;
   text-align: center;
   letter-spacing: .002em;
+}
+.sentence.masked::after {
+  content: "";
+  position: absolute;
+  inset: -6px -4px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .42);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  cursor: default;
+  user-select: none;
+}
+.sentence.masked .w { pointer-events: none; }
+@supports not ((backdrop-filter: blur(6px)) or (-webkit-backdrop-filter: blur(6px))) {
+  .sentence.masked { filter: blur(6px); user-select: none; }
+  .sentence.masked::after { display: none; }
 }
 .translation {
   font-family: var(--font-zh);

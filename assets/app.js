@@ -56,7 +56,7 @@
   var STORE_KEY = "en-reader.state.v1";
   var WORD_RE = /[A-Za-z]+(?:['’\-][A-Za-z]+)*|\d+(?:[.,:]\d+)*/g;
 
-  var state = { idx: 0, showZh: false, auto: false, data: null, voiceURI: "", rate: 1 };
+  var state = { idx: 0, showZh: false, auto: false, mask: false, data: null, voiceURI: "", rate: 1 };
   var voice = null;
   var toastTimer = 0;
 
@@ -111,8 +111,13 @@
     $("title").textContent = state.data.title;
     document.title = state.data.title + " · 轻读";
     $("sentence").innerHTML = tokenize(s.en, s.words);
+    $("sentence").classList.toggle("masked", state.mask);
     $("translation").textContent = s.zh || "";
-    $("translation").hidden = !state.showZh || !s.zh;
+    $("translation").hidden = !state.showZh || state.mask || !s.zh;
+    $("btn-zh").disabled = state.mask;
+    $("btn-zh").classList.toggle("active", state.showZh && !state.mask);
+    $("btn-mask").classList.toggle("active", state.mask);
+    $("btn-mask").setAttribute("aria-pressed", String(state.mask));
     $("progress").textContent = (state.idx + 1) + " / " + state.data.sentences.length;
     bindWords();
     closeCard();
@@ -123,6 +128,8 @@
   function bindWords() {
     var nodes = $("sentence").querySelectorAll(".w");
     Array.prototype.forEach.call(nodes, function (el) {
+      el.tabIndex = state.mask ? -1 : 0;
+      if (state.mask) return;
       el.addEventListener("click", function (e) {
         e.stopPropagation();
         openCard(el);
@@ -412,7 +419,7 @@
   function persist() {
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify({
-        idx: state.idx, showZh: state.showZh, auto: state.auto,
+        idx: state.idx, showZh: state.showZh, auto: state.auto, mask: state.mask,
         voiceURI: state.voiceURI, rate: state.rate
       }));
     } catch (e) { /* 隐私模式忽略 */ }
@@ -426,6 +433,7 @@
       if (v && typeof v.idx === "number") state.idx = v.idx;
       state.showZh = !!(v && v.showZh);
       state.auto = !!(v && v.auto);
+      state.mask = !!(v && v.mask);
       if (v && typeof v.voiceURI === "string") state.voiceURI = v.voiceURI;
       if (v && typeof v.rate === "number") {
         state.rate = Math.min(2, Math.max(0.5, Math.round(v.rate * 10) / 10));
@@ -488,6 +496,12 @@
       state.showZh = !state.showZh;
       this.classList.toggle("active", state.showZh);
       render();
+    });
+
+    $("btn-mask").addEventListener("click", function () {
+      state.mask = !state.mask;
+      render();
+      toast(state.mask ? "遮挡已开启：译文暂隐藏" : "遮挡已关闭");
     });
 
     $("btn-auto").addEventListener("click", function () {
@@ -561,9 +575,16 @@
         return;
       }
       if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+      if (!$("panel").hidden || !$("voice-pop").hidden) return;
       if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
-      else if (e.key === " ") { e.preventDefault(); speak(state.data.sentences[state.idx].en); }
+      else if (e.key === " ") {
+        if (e.repeat) return;
+        var t = e.target;
+        if (t && t.closest && (t.closest(".w") || t.closest("button") || t.closest("a"))) return;
+        e.preventDefault();
+        speak(state.data.sentences[state.idx].en);
+      }
     });
 
     document.addEventListener("dragover", function (e) { e.preventDefault(); });
