@@ -113,9 +113,8 @@
     $("sentence").innerHTML = tokenize(s.en, s.words);
     $("sentence").classList.toggle("masked", state.mask);
     $("translation").textContent = s.zh || "";
-    $("translation").hidden = !state.showZh || state.mask || !s.zh;
-    $("btn-zh").disabled = state.mask;
-    $("btn-zh").classList.toggle("active", state.showZh && !state.mask);
+    $("translation").hidden = !state.showZh || !s.zh;
+    $("btn-zh").classList.toggle("active", state.showZh);
     $("btn-mask").classList.toggle("active", state.mask);
     $("btn-mask").setAttribute("aria-pressed", String(state.mask));
     $("progress").textContent = (state.idx + 1) + " / " + state.data.sentences.length;
@@ -501,7 +500,7 @@
     $("btn-mask").addEventListener("click", function () {
       state.mask = !state.mask;
       render();
-      toast(state.mask ? "遮挡已开启：译文暂隐藏" : "遮挡已关闭");
+      toast(state.mask ? "遮挡已开启" : "遮挡已关闭");
     });
 
     $("btn-auto").addEventListener("click", function () {
