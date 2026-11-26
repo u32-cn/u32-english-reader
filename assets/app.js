@@ -63,6 +63,15 @@
   var voiceRetryCount = 0;
   var voiceRetryTimer = 0;
 
+  /* ---------- 滚轮翻句 ---------- */
+  var WHEEL_THRESHOLD = 100;   // 鼠标一格 ≈ 100px；触控板累积到阈值才翻
+  var WHEEL_COOLDOWN_MS = 250; // 翻句后冷却，吃掉触控板惯性
+  var WHEEL_IDLE_MS = 150;     // 事件间隔超过此值视为新手势
+  var wheelAccum = 0;          // 带符号的累计 delta（像素）
+  var wheelLastEventAt = 0;
+  var wheelLastFlipAt = 0;
+  var wheelLocked = false;     // 一次手势内只允许翻一句
+
   function log() {
     if (!LOG_ENABLED) return;
     var args = Array.prototype.slice.call(arguments);
@@ -366,6 +375,51 @@
     render();
   }
 
+  /* ---------- 滚轮翻句 ---------- */
+  function wheelPixels(e) {
+    var k = 1;
+    if (e.deltaMode === 1) k = 16;             // 行 → 像素
+    else if (e.deltaMode === 2) k = window.innerHeight; // 页 → 像素
+    return { x: (e.deltaX || 0) * k, y: (e.deltaY || 0) * k };
+  }
+
+  function handleWheel(e) {
+    var t = e.target;
+    if (e.ctrlKey) return; // 缩放手势
+    if (t && t.closest && (t.closest(".modal") || t.closest(".popover"))) return;
+    if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    if (anyModalOpen() || !$("voice-pop").hidden) return;
+
+    var d = wheelPixels(e);
+    // 横向手势不翻句；纵向在非边界处吞掉原生滚动，边界处放行
+    if (!d.y || Math.abs(d.x) > Math.abs(d.y)) { wheelAccum = 0; return; }
+    var dir = d.y > 0 ? 1 : -1;
+    var next = state.idx + dir;
+    if (next < 0 || next >= state.data.sentences.length) {
+      wheelAccum = 0;
+      log("wheel: at edge, native scroll", dir > 0 ? "next" : "prev", "idx", state.idx);
+      return;
+    }
+    e.preventDefault();
+
+    var now = Date.now();
+    var gap = now - wheelLastEventAt;
+    wheelLastEventAt = now;
+    if (gap > WHEEL_IDLE_MS) { wheelLocked = false; wheelAccum = 0; }
+    if (wheelLocked || now - wheelLastFlipAt < WHEEL_COOLDOWN_MS) return;
+
+    if ((wheelAccum > 0 && d.y < 0) || (wheelAccum < 0 && d.y > 0)) wheelAccum = 0;
+    wheelAccum += d.y;
+    if (Math.abs(wheelAccum) < WHEEL_THRESHOLD) return;
+
+    wheelAccum = 0;
+    wheelLastFlipAt = now;
+    wheelLocked = true;
+    log("wheel:", dir > 0 ? "next" : "prev", state.idx, "->", next,
+      "deltaY", Math.round(d.y), "mode", e.deltaMode);
+    go(dir);
+  }
+
   /* ---------- 载入数据 ---------- */
   function applyData(obj, sourceLabel) {
     log("applyData:", sourceLabel || "(none)", "title", obj.title, "sentences", obj.sentences.length);
@@ -427,6 +481,11 @@
   var LIB_STORE_KEY = "en-reader.libraries.v1";
   var LIB_HIDDEN_KEY = "en-reader.libraries.hidden.v1";
   var DEFAULT_LIB_URL = "library/library.json";
+  var OFFICIAL_LIB_URL = "https://u32-english-reader-official-library.u32.cn/library.json";
+  var DEFAULT_LIBS = [
+    { url: DEFAULT_LIB_URL, name: "默认资料库" },
+    { url: OFFICIAL_LIB_URL, name: "轻读官方资料库" }
+  ];
   var libs = [];
   var libHidden = [];
   var libCache = {};
@@ -451,10 +510,6 @@
   }
 
   function loadLibs() {
-    var builtin = {
-      url: DEFAULT_LIB_URL, name: "默认资料库", builtin: true,
-      state: "idle", data: null, err: ""
-    };
     libHidden = [];
     try {
       var rawH = localStorage.getItem(LIB_HIDDEN_KEY);
@@ -466,11 +521,17 @@
       }
     } catch (e) { logError("loadLibs: bad hidden list", e); }
 
-    var hiddenDefault = libHidden.some(function (u) {
-      return resolveUrl(u) === resolveUrl(DEFAULT_LIB_URL);
+    libs = [];
+    DEFAULT_LIBS.forEach(function (d) {
+      var hidden = libHidden.some(function (u) {
+        return resolveUrl(u) === resolveUrl(d.url);
+      });
+      if (hidden) { log("loadLibs: hidden default library", d.name); return; }
+      libs.push({
+        url: d.url, name: d.name, builtin: true,
+        state: "idle", data: null, err: ""
+      });
     });
-    libs = hiddenDefault ? [] : [builtin];
-    if (hiddenDefault) log("loadLibs: default library hidden by user");
     try {
       var raw = localStorage.getItem(LIB_STORE_KEY);
       if (raw) {
@@ -530,16 +591,18 @@
   }
 
   function restoreDefaultLib() {
-    var abs = resolveUrl(DEFAULT_LIB_URL);
-    libHidden = libHidden.filter(function (u) { return resolveUrl(u) !== abs; });
+    DEFAULT_LIBS.forEach(function (d) {
+      var abs = resolveUrl(d.url);
+      libHidden = libHidden.filter(function (u) { return resolveUrl(u) !== abs; });
+      var exists = libs.some(function (l) { return resolveUrl(l.url) === abs; });
+      if (!exists) {
+        libs.push({
+          url: d.url, name: d.name, builtin: true,
+          state: "idle", data: null, err: ""
+        });
+      }
+    });
     saveHidden();
-    var exists = libs.some(function (l) { return resolveUrl(l.url) === abs; });
-    if (!exists) {
-      libs.unshift({
-        url: DEFAULT_LIB_URL, name: "默认资料库", builtin: true,
-        state: "idle", data: null, err: ""
-      });
-    }
     renderManageList();
     renderLibTree();
     prefetchLibs();
@@ -972,10 +1035,11 @@
     }
 
     var restore = $("btn-lib-restore");
-    if (restore) {      var hasDefault = libs.some(function (l) {
-        return resolveUrl(l.url) === resolveUrl(DEFAULT_LIB_URL);
+    if (restore) {
+      var allDefault = DEFAULT_LIBS.every(function (d) {
+        return libs.some(function (l) { return resolveUrl(l.url) === resolveUrl(d.url); });
       });
-      restore.hidden = hasDefault;
+      restore.hidden = allDefault;
     }
   }
 
@@ -1340,6 +1404,7 @@
 
     window.addEventListener("resize", closeCard);
     window.addEventListener("scroll", closeCard, true);
+    window.addEventListener("wheel", handleWheel, { passive: false });
   }
 
   if (document.readyState === "loading") {
