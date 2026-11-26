@@ -134,7 +134,7 @@
     <div class="kicker">帮助中心</div>
     <h1>轻读 · 使用帮助</h1>
     <p class="lead">纯浏览器英语阅读器：AI 生成的 JSON 文章，逐句朗读、逐词查义、听力遮挡。无后端、无安装、断网可用。</p>
-    <div class="answer"><b>最快上手</b>打开网页 <code>http://u32-english-reader.u32.cn/</code> → 顶部「载入」→ 复制 AI 提示词发给任意 AI → 把返回的 JSON 粘贴回来，点「载入」。也可以直接把 <code>.json</code> 文件拖到页面上。</div>
+    <div class="answer"><b>最快上手</b>打开网页 <code>http://u32-english-reader.u32.cn/</code> → 顶部「载入」直接进入浏览窗口 → 展开书、点文章 → 「载入」开读。想读自己的文章：窗口左下「手动导入 JSON」，粘贴 AI 生成的 JSON 或直接拖 <code>.json</code> 文件进页面。</div>
   </section>
 
   <nav class="nav">
@@ -153,13 +153,22 @@
     <h3>方式 A：手动载入 JSON</h3>
     <ol class="steps">
       <li>打开网页 <a href="http://u32-english-reader.u32.cn/" target="_blank" rel="noopener">u32-english-reader.u32.cn</a>（离线本地部署时，双击 <code>index.html</code> 同样可用）。</li>
-      <li>点顶部「载入」，展开「没有 JSON？用 AI 生成」，复制提示词。</li>
-      <li>把提示词和英文文章一起发给任意 AI（ChatGPT / Claude / WorkBuddy 均可），拿到 JSON。</li>
-      <li>回到「载入」面板：粘贴 JSON 文本，或点「加载 JSON 文件」选文件，再点「载入」。</li>
+      <li>点顶部「载入」进入浏览窗口，再点左下「手动导入 JSON」。</li>
+      <li>展开「没有 JSON？用 AI 生成」，复制提示词，和英文文章一起发给任意 AI（ChatGPT / Claude / WorkBuddy 均可），拿到 JSON。</li>
+      <li>把 JSON 粘贴进文本框，或点「加载 JSON 文件」选文件，再点「载入」。</li>
       <li>也可以直接把 <code>.json</code> 文件拖到页面任意位置。</li>
     </ol>
 
-    <h3>方式 B：链接自动载入（?src= 参数）</h3>
+    <h3>方式 B：从资料库挑文章</h3>
+    <p>点顶部「载入」<b>直接进入浏览窗口</b>，目录是四级树：<b>资料库 → 系列 → 书 → 文章</b>。资料库与系列默认展开、书默认折叠，点书展开文章；点文章选中后按右下「载入」，或直接双击文章。顶部过滤框跨四级搜索，输入即筛，命中路径自动展开。</p>
+    <p>窗口底部还有两个按钮：</p>
+    <ul class="steps">
+      <li><b>手动导入 JSON</b>：粘贴 JSON 文本或选 <code>.json</code> 文件，也在这里复制 AI 提示词。导入成功后直接进入阅读。</li>
+      <li><b>资料库管理</b>：查看已添加的资料库、删除、添加新库。删除对默认库同样有效，删掉后该面板会出现「恢复默认资料库」。添加只需填一份 <code>library.json</code> 索引的网址，会先校验再保存（存浏览器本地）。默认库是本项目的 <code>library/</code> 目录，可作为格式示例，规范见 <a href="library/README.md">library/README.md</a>。</li>
+    </ul>
+    <div class="tip"><b>注意</b>资料库需要 http(s) 访问。双击本地 <code>index.html</code> 打开时浏览器禁止读取本地文件，此时资料库不可用，手动导入 JSON 仍正常。</div>
+
+    <h3>方式 C：链接自动载入（?src= 参数）</h3>
     <p>适合配合本地 HTTP 服务使用：阅读页地址后加 <code>?src=&lt;JSON 的 URL&gt;</code>，页面会自动 fetch 并载入，失败只在页内提示、不白屏。注意 <code>src</code> 必须是同源绝对 URL；同名文件重复载入可能命中浏览器缓存，可在 URL 后加 <code>?t=&lt;时间戳&gt;</code> 绕过。</p>
 
     <h3>生成 JSON 的字段规范</h3>
@@ -213,7 +222,7 @@
       <tr><td><kbd>↑</kbd></td><td>语速 +0.1×（上限 2.0×）</td></tr>
       <tr><td><kbd>↓</kbd></td><td>语速 −0.1×（下限 0.5×）</td></tr>
       <tr><td><kbd>空格</kbd></td><td>朗读当前句（长按不会重复触发）</td></tr>
-      <tr><td><kbd>Esc</kbd></td><td>依次关闭：载入面板 → 音色弹层 → 词卡</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>依次关闭：资料库弹窗 → 载入面板 → 音色弹层 → 词卡</td></tr>
       <tr><td><kbd>Enter</kbd> / <kbd>空格</kbd>（词卡上的词获得焦点时）</td><td>打开该词的词卡</td></tr>
     </table>
     <div class="tip"><b>失效场景</b>焦点在输入框 / 下拉框 / 按钮 / 链接上时，翻句、语速、朗读快捷键会被跳过（防止误触）。点一下页面空白处让焦点回到正文即可。另外载入面板打开时快捷键也不响应，先 <kbd>Esc</kbd> 关掉。</div>

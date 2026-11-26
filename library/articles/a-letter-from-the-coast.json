@@ -1,0 +1,47 @@
+{
+  "title": "A Letter from the Coast",
+  "sentences": [
+    {
+      "en": "My grandmother has lived in the same house by the sea for sixty years.",
+      "zh": "我奶奶在同一座海边的房子里住了六十年。",
+      "words": {
+        "grandmother": { "zh": "祖母；奶奶", "pos": "n.", "ipa": "/ˈɡrænmʌðər/" },
+        "coast": { "zh": "海岸", "pos": "n.", "ipa": "/koʊst/" }
+      }
+    },
+    {
+      "en": "Every winter, the waves come a little closer to her door.",
+      "zh": "每年冬天，海浪都会离她的门口近一点。",
+      "words": {
+        "waves": { "zh": "海浪", "pos": "n.", "ipa": "/weɪvz/" },
+        "closer": { "zh": "更近", "pos": "adv.", "ipa": "/ˈkloʊsər/" }
+      }
+    },
+    {
+      "en": "Last month, the town council offered to buy her land.",
+      "zh": "上个月，镇议会提出买下她的土地。",
+      "words": {
+        "council": { "zh": "议会；委员会", "pos": "n.", "ipa": "/ˈkaʊnsl/" },
+        "offered": { "zh": "提出；主动给予", "pos": "v.", "ipa": "/ˈɔːfərd/" },
+        "land": { "zh": "土地", "pos": "n.", "ipa": "/lænd/" }
+      }
+    },
+    {
+      "en": "She wrote back in one sentence: \"I would rather move the sea.\"",
+      "zh": "她只回了一句话：“我宁愿把海搬走。”",
+      "words": {
+        "sentence": { "zh": "句子", "pos": "n.", "ipa": "/ˈsentəns/" },
+        "rather": { "zh": "宁愿（would rather 意为宁可）", "pos": "adv.", "ipa": "/ˈræðər/" }
+      }
+    },
+    {
+      "en": "We all laughed, and then nobody spoke for a while.",
+      "zh": "我们都笑了，然后有一阵子谁也没说话。",
+      "words": {
+        "laughed": { "zh": "笑了", "pos": "v.", "ipa": "/læft/" },
+        "nobody": { "zh": "没有人", "pos": "pron.", "ipa": "/ˈnoʊbədi/" },
+        "spoke": { "zh": "说话（speak 的过去式）", "pos": "v.", "ipa": "/spoʊk/" }
+      }
+    }
+  ]
+}

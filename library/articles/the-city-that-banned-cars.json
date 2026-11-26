@@ -1,0 +1,53 @@
+{
+  "title": "The City That Banned Cars",
+  "sentences": [
+    {
+      "en": "In 2024, a mid-sized European city closed its historic centre to private cars.",
+      "zh": "2024 年，一座中等规模的欧洲城市将老城区对私家车关闭。",
+      "words": {
+        "mid-sized": { "zh": "中等规模的", "pos": "adj.", "ipa": "/ˌmɪd ˈsaɪzd/" },
+        "historic": { "zh": "历史悠久的", "pos": "adj.", "ipa": "/hɪˈstɔːrɪk/" },
+        "centre": { "zh": "中心区（英式拼写）", "pos": "n.", "ipa": "/ˈsentər/" },
+        "private": { "zh": "私人的", "pos": "adj.", "ipa": "/ˈpraɪvət/" }
+      }
+    },
+    {
+      "en": "At first, shop owners feared that customers would stay away.",
+      "zh": "起初，店主们担心顾客会不再上门。",
+      "words": {
+        "feared": { "zh": "担心；害怕", "pos": "v.", "ipa": "/fɪrd/" },
+        "customers": { "zh": "顾客", "pos": "n.", "ipa": "/ˈkʌstəmərz/" },
+        "stay": { "zh": "停留（stay away 意为不来、远离）", "pos": "v.", "ipa": "/steɪ/" }
+      }
+    },
+    {
+      "en": "Two years later, sales in the area have risen by almost a fifth.",
+      "zh": "两年后，该区域的销售额增长了近五分之一。",
+      "words": {
+        "sales": { "zh": "销售额", "pos": "n.", "ipa": "/seɪlz/" },
+        "risen": { "zh": "上升（rise 的过去分词）", "pos": "v.", "ipa": "/ˈrɪzn/" },
+        "almost": { "zh": "几乎", "pos": "adv.", "ipa": "/ˈɔːlmoʊst/" },
+        "fifth": { "zh": "五分之一", "pos": "num.", "ipa": "/fɪfθ/" }
+      }
+    },
+    {
+      "en": "The city now plans to extend the ban to three more districts.",
+      "zh": "该市现在计划把禁令扩大到另外三个城区。",
+      "words": {
+        "extend": { "zh": "扩大；延伸", "pos": "v.", "ipa": "/ɪkˈstend/" },
+        "ban": { "zh": "禁令", "pos": "n.", "ipa": "/bæn/" },
+        "districts": { "zh": "城区；地区", "pos": "n.", "ipa": "/ˈdɪstrɪkts/" }
+      }
+    },
+    {
+      "en": "Not everyone is pleased, however; delivery drivers say their routes are longer and slower.",
+      "zh": "不过并非所有人都满意：送货司机说他们的路线更长也更慢。",
+      "words": {
+        "pleased": { "zh": "满意的", "pos": "adj.", "ipa": "/pliːzd/" },
+        "however": { "zh": "然而", "pos": "adv.", "ipa": "/haʊˈevər/" },
+        "delivery": { "zh": "送货", "pos": "n.", "ipa": "/dɪˈlɪvəri/" },
+        "routes": { "zh": "路线", "pos": "n.", "ipa": "/ruːts/" }
+      }
+    }
+  ]
+}

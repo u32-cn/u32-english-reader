@@ -1,0 +1,56 @@
+{
+  "title": "The Lost Umbrella",
+  "sentences": [
+    {
+      "en": "Mia left her umbrella on the bus again.",
+      "zh": "米娅又把伞落在公交车上了。",
+      "words": {
+        "umbrella": { "zh": "雨伞", "pos": "n.", "ipa": "/ʌmˈbrelə/" },
+        "again": { "zh": "又一次", "pos": "adv.", "ipa": "/əˈɡen/" }
+      }
+    },
+    {
+      "en": "It was a grey Tuesday, and the rain had not stopped all morning.",
+      "zh": "那是个灰蒙蒙的星期二，雨整个上午都没停。",
+      "words": {
+        "grey": { "zh": "灰暗的", "pos": "adj.", "ipa": "/ɡreɪ/" },
+        "rain": { "zh": "雨", "pos": "n.", "ipa": "/reɪn/" },
+        "stopped": { "zh": "停下", "pos": "v.", "ipa": "/stɑːpt/" }
+      }
+    },
+    {
+      "en": "At the lost property office, a man handed her a red umbrella.",
+      "zh": "在失物招领处，一名男子递给她一把红色的伞。",
+      "words": {
+        "property": { "zh": "财物（lost property 意为失物）", "pos": "n.", "ipa": "/ˈprɑːpərti/" },
+        "handed": { "zh": "递给", "pos": "v.", "ipa": "/ˈhændɪd/" }
+      }
+    },
+    {
+      "en": "\"That's not mine,\" she said, but she took it anyway.",
+      "zh": "“那不是我的。”她说，但还是接了过来。",
+      "words": {
+        "mine": { "zh": "我的（东西）", "pos": "pron.", "ipa": "/maɪn/" },
+        "took": { "zh": "拿；接过", "pos": "v.", "ipa": "/tʊk/" },
+        "anyway": { "zh": "不管怎样；还是", "pos": "adv.", "ipa": "/ˈeniweɪ/" }
+      }
+    },
+    {
+      "en": "Inside the handle she found a small note with a phone number.",
+      "zh": "在伞柄里，她发现了一张写着电话号码的小纸条。",
+      "words": {
+        "handle": { "zh": "把手", "pos": "n.", "ipa": "/ˈhændl/" },
+        "note": { "zh": "便条", "pos": "n.", "ipa": "/noʊt/" }
+      }
+    },
+    {
+      "en": "She called, and a stranger laughed: \"Keep it. It suits you.\"",
+      "zh": "她打了过去，一个陌生人在电话里笑了：“留着吧，它挺配你的。”",
+      "words": {
+        "stranger": { "zh": "陌生人", "pos": "n.", "ipa": "/ˈstreɪndʒər/" },
+        "laughed": { "zh": "笑了", "pos": "v.", "ipa": "/læft/" },
+        "suits": { "zh": "适合", "pos": "v.", "ipa": "/suːts/" }
+      }
+    }
+  ]
+}

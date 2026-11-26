@@ -373,7 +373,7 @@
     state.idx = 0;
     render();
     toast("已载入「" + obj.title + "」，共 " + obj.sentences.length + " 句" + (sourceLabel ? "（" + sourceLabel + "）" : ""));
-    closePanel();
+    closeAllModals();
   }
 
   function fillFromFile(file) {
@@ -423,6 +423,586 @@
     box.value = "";
   }
 
+  /* ---------- 资料库 ---------- */
+  var LIB_STORE_KEY = "en-reader.libraries.v1";
+  var LIB_HIDDEN_KEY = "en-reader.libraries.hidden.v1";
+  var DEFAULT_LIB_URL = "library/library.json";
+  var libs = [];
+  var libHidden = [];
+  var libCache = {};
+  var libFilter = "";
+  var libSel = null;
+  var libOpen = {};
+  var panelFromBrowse = false;
+
+  function resolveUrl(u) {
+    try { return new URL(u, location.href).href; } catch (e) { return ""; }
+  }
+
+  function anyModalOpen() {
+    return ["lib-modal", "panel", "lib-manage-modal"].some(function (id) {
+      var el = $(id);
+      return el && !el.hidden;
+    });
+  }
+
+  function syncScrollLock() {
+    document.body.style.overflow = anyModalOpen() ? "hidden" : "";
+  }
+
+  function loadLibs() {
+    var builtin = {
+      url: DEFAULT_LIB_URL, name: "默认资料库", builtin: true,
+      state: "idle", data: null, err: ""
+    };
+    libHidden = [];
+    try {
+      var rawH = localStorage.getItem(LIB_HIDDEN_KEY);
+      if (rawH) {
+        var harr = JSON.parse(rawH);
+        if (Array.isArray(harr)) {
+          libHidden = harr.filter(function (u) { return typeof u === "string" && u; });
+        }
+      }
+    } catch (e) { logError("loadLibs: bad hidden list", e); }
+
+    var hiddenDefault = libHidden.some(function (u) {
+      return resolveUrl(u) === resolveUrl(DEFAULT_LIB_URL);
+    });
+    libs = hiddenDefault ? [] : [builtin];
+    if (hiddenDefault) log("loadLibs: default library hidden by user");
+    try {
+      var raw = localStorage.getItem(LIB_STORE_KEY);
+      if (raw) {
+        var arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          arr.forEach(function (it) {
+            if (!it || typeof it.url !== "string" || !it.url) return;
+            var abs = resolveUrl(it.url);
+            if (!abs || libs.some(function (l) { return resolveUrl(l.url) === abs; })) return;
+            libs.push({
+              url: it.url, name: typeof it.name === "string" && it.name ? it.name : it.url,
+              state: "idle", data: null, err: ""
+            });
+          });
+        }
+      }
+    } catch (e) { logError("loadLibs: bad localStorage", e); }
+    log("loadLibs:", libs.length, "library(ies)");
+  }
+
+  function saveLibs() {
+    try {
+      var out = libs.filter(function (l) { return !l.builtin; }).map(function (l) {
+        return { url: l.url, name: l.name };
+      });
+      localStorage.setItem(LIB_STORE_KEY, JSON.stringify(out));
+      log("saveLibs:", out.length, "custom library(ies)");
+    } catch (e) { logError("saveLibs failed:", e); }
+  }
+
+  function saveHidden() {
+    try {
+      localStorage.setItem(LIB_HIDDEN_KEY, JSON.stringify(libHidden));
+      log("saveHidden:", libHidden.length, "hidden");
+    } catch (e) { logError("saveHidden failed:", e); }
+  }
+
+  function removeLib(i) {
+    var lib = libs[i];
+    if (!lib) return;
+    var name = libLabel(lib);
+    if (lib.builtin) {
+      var abs = resolveUrl(lib.url);
+      if (libHidden.indexOf(abs) < 0) libHidden.push(abs);
+      saveHidden();
+    }
+    libs.splice(i, 1);
+    saveLibs();
+    if (libSel && lib.data && libSel.url && lib.data.baseUrl && libSel.url.indexOf(lib.data.baseUrl) === 0) {
+      libSel = null;
+    }
+    renderManageList();
+    renderLibTree();
+    renderLibMeta();
+    toast("已移除资料库：" + name + (lib.builtin ? "（可在本页恢复）" : ""));
+    log("removeLib:", name);
+  }
+
+  function restoreDefaultLib() {
+    var abs = resolveUrl(DEFAULT_LIB_URL);
+    libHidden = libHidden.filter(function (u) { return resolveUrl(u) !== abs; });
+    saveHidden();
+    var exists = libs.some(function (l) { return resolveUrl(l.url) === abs; });
+    if (!exists) {
+      libs.unshift({
+        url: DEFAULT_LIB_URL, name: "默认资料库", builtin: true,
+        state: "idle", data: null, err: ""
+      });
+    }
+    renderManageList();
+    renderLibTree();
+    prefetchLibs();
+    toast("已恢复默认资料库");
+    log("restoreDefaultLib");
+  }
+
+  function normalizeLibrary(raw, indexUrl) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+      throw new Error("索引根节点必须是一个对象");
+    }
+    if (!Array.isArray(raw.series) || raw.series.length === 0) {
+      throw new Error("缺少非空的 series 数组");
+    }
+    var series = raw.series.map(function (s, i) {
+      if (!s || typeof s.name !== "string" || !s.name.trim()) {
+        throw new Error("第 " + (i + 1) + " 个系列缺少 name");
+      }
+      var books = Array.isArray(s.books) ? s.books.map(function (b, j) {
+        if (!b || typeof b.name !== "string" || !b.name.trim()) {
+          throw new Error("系列「" + s.name + "」第 " + (j + 1) + " 本书缺少 name");
+        }
+        var articles = Array.isArray(b.articles) ? b.articles.filter(function (a) {
+          return a && typeof a.file === "string" && a.file;
+        }).map(function (a) {
+          return {
+            title: typeof a.title === "string" && a.title.trim() ? a.title.trim() : a.file,
+            level: typeof a.level === "string" ? a.level : "",
+            url: new URL(a.file, indexUrl).href
+          };
+        }) : [];
+        return { name: b.name.trim(), articles: articles };
+      }) : [];
+      return { name: s.name.trim(), books: books };
+    });
+    return {
+      name: typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : "未命名资料库",
+      series: series,
+      baseUrl: indexUrl
+    };
+  }
+
+  function fetchIndex(lib) {
+    var url = resolveUrl(lib.url);
+    if (!url) return Promise.reject(new Error("资料库网址不合法"));
+    if (libCache[url]) return Promise.resolve(libCache[url]);
+    log("fetchIndex:", url);
+    return fetch(url, { cache: "no-cache" }).then(function (r) {
+      log("fetchIndex: status", r.status, url);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function (raw) {
+      var idx = normalizeLibrary(raw, url);
+      idx.url = url;
+      libCache[url] = idx;
+      return idx;
+    });
+  }
+
+  function libArticleCount(idx) {
+    var n = 0;
+    if (!idx) return 0;
+    idx.series.forEach(function (s) {
+      s.books.forEach(function (b) { n += b.articles.length; });
+    });
+    return n;
+  }
+
+  function libLabel(lib) {
+    var dup = libs.filter(function (l) { return l.name === lib.name; }).length > 1;
+    if (!dup) return lib.name;
+    try { return lib.name + " · " + new URL(resolveUrl(lib.url)).host; } catch (e) { return lib.name; }
+  }
+
+  function prefetchLibs() {
+    libs.forEach(function (lib) {
+      if (lib.state === "loading" || lib.state === "ok") return;
+      lib.state = "loading";
+      fetchIndex(lib).then(function (idx) {
+        lib.state = "ok";
+        lib.data = idx;
+        lib.err = "";
+        if (idx.name && idx.name !== lib.name) {
+          lib.name = idx.name;
+          if (!lib.builtin) saveLibs();
+        }
+        log("library ok:", lib.name, libArticleCount(idx), "article(s)");
+        redrawLibraryUI();
+      }).catch(function (err) {
+        lib.state = "error";
+        lib.err = err.message;
+        logError("library index failed:", lib.url, err);
+        redrawLibraryUI();
+      });
+    });
+  }
+
+  function redrawLibraryUI() {
+    if (!$("lib-modal").hidden) renderLibTree();
+    if (!$("lib-manage-modal").hidden) renderManageList();
+  }
+
+  function libVisible(name, q) {
+    return !q || String(name).toLowerCase().indexOf(q) >= 0;
+  }
+
+  function renderLibTree() {
+    var box = $("lib-tree");
+    if (!box) return;
+    box.innerHTML = "";
+    if (!libs.length) {
+      var p0 = document.createElement("p");
+      p0.className = "lib-empty";
+      p0.textContent = "还没有资料库，点下方「资料库管理」添加";
+      box.appendChild(p0);
+      renderLibMeta();
+      return;
+    }
+    var q = libFilter.trim().toLowerCase();
+    var shown = 0;
+
+    libs.forEach(function (lib, li) {
+      var lKey = "l" + li;
+      var libHit = libVisible(lib.name, q);
+      var idx = lib.data;
+      var seriesViews = [];
+
+      if (idx) {
+        idx.series.forEach(function (s, si) {
+          var sHit = libHit || libVisible(s.name, q);
+          var bookViews = [];
+          s.books.forEach(function (b, bi) {
+            var bHit = sHit || libVisible(b.name, q);
+            var arts = b.articles.filter(function (a) {
+              return bHit || libVisible(a.title, q);
+            });
+            if (q && !bHit && !arts.length) return;
+            bookViews.push({ b: b, bi: bi, arts: arts });
+          });
+          if (q && !sHit && !bookViews.length) return;
+          seriesViews.push({ s: s, si: si, books: bookViews });
+        });
+      }
+
+      if (q && !libHit && !seriesViews.length) return;
+      shown++;
+
+      var lOpen = q ? true : libOpen[lKey] !== false;
+      box.appendChild(libRowElem("lib", {
+        label: libLabel(lib),
+        libIndex: li,
+        open: lOpen,
+        caret: true,
+        state: lib.state,
+        err: lib.err,
+        count: idx ? libArticleCount(idx) : null,
+        onToggle: function () {
+          if (lib.state === "error") {
+            lib.state = "idle";
+            prefetchLibs();
+            return;
+          }
+          if (lib.state === "loading") { toast("索引读取中，稍等"); return; }
+          libOpen[lKey] = !libOpen[lKey];
+          renderLibTree();
+        }
+      }));
+
+      if (!lOpen || !idx) return;
+
+      seriesViews.forEach(function (sv) {
+        var sKey = lKey + "s" + sv.si;
+        var sOpen = q ? true : libOpen[sKey] !== false;
+        var sCount = sv.s.books.reduce(function (n, b) { return n + b.articles.length; }, 0);
+        box.appendChild(libRowElem("series", {
+          label: sv.s.name,
+          open: sOpen,
+          caret: true,
+          count: sCount,
+          onToggle: function () {
+            libOpen[sKey] = !libOpen[sKey];
+            renderLibTree();
+          }
+        }));
+        if (!sOpen) return;
+
+        sv.books.forEach(function (bv) {
+          var bKey = sKey + "b" + bv.bi;
+          var bOpen = q ? true : libOpen[bKey] !== false;
+          box.appendChild(libRowElem("book", {
+            label: bv.b.name,
+            open: bOpen,
+            caret: true,
+            count: bv.b.articles.length,
+            onToggle: function () {
+              libOpen[bKey] = !libOpen[bKey];
+              renderLibTree();
+            }
+          }));
+          if (!bOpen) return;
+
+          bv.arts.forEach(function (a) {
+            var selected = !!(libSel && libSel.url === a.url);
+            box.appendChild(libRowElem("article", {
+              label: a.title,
+              level: a.level,
+              selected: selected,
+              onClick: function () {
+                libSel = {
+                  title: a.title, level: a.level, url: a.url,
+                  path: lib.name + " › " + sv.s.name + " › " + bv.b.name
+                };
+                renderLibTree();
+              },
+              onDblClick: function () {
+                libSel = {
+                  title: a.title, level: a.level, url: a.url,
+                  path: lib.name + " › " + sv.s.name + " › " + bv.b.name
+                };
+                loadSelectedArticle();
+              }
+            }));
+          });
+        });
+      });
+    });
+
+    if (!shown) {
+      var empty = document.createElement("p");
+      empty.className = "lib-empty";
+      empty.textContent = q ? "没有匹配的条目" : "资料库还没有内容";
+      box.appendChild(empty);
+    }
+    renderLibMeta();
+  }
+
+  function libRowElem(kind, opt) {
+    var row = document.createElement("button");
+    row.type = "button";
+    row.className = "lib-item lib-" + kind + (opt.selected ? " selected" : "");
+    row.setAttribute("role", "treeitem");
+    if (typeof opt.libIndex === "number") row.setAttribute("data-lib", String(opt.libIndex));
+
+    if (opt.caret) {
+      var c = document.createElement("span");
+      c.className = "lib-caret";
+      c.textContent = opt.open ? "▾" : "▸";
+      row.appendChild(c);
+    } else {
+      var d = document.createElement("span");
+      d.className = "lib-dot";
+      row.appendChild(d);
+    }
+
+    var t = document.createElement("span");
+    t.className = "lib-label";
+    t.textContent = opt.label;
+    row.appendChild(t);
+
+    if (opt.state === "loading") {
+      var st = document.createElement("span");
+      st.className = "lib-state";
+      st.textContent = "读取中…";
+      row.appendChild(st);
+    } else if (opt.state === "error") {
+      var se = document.createElement("span");
+      se.className = "lib-state bad";
+      se.textContent = "读取失败，点击重试";
+      se.title = opt.err || "";
+      row.appendChild(se);
+    } else if (opt.level) {
+      var lv = document.createElement("span");
+      lv.className = "lib-level";
+      lv.textContent = opt.level;
+      row.appendChild(lv);
+    }
+
+    if (typeof opt.count === "number") {
+      var ct = document.createElement("span");
+      ct.className = "lib-count";
+      ct.textContent = String(opt.count);
+      row.appendChild(ct);
+    }
+
+    if (opt.onToggle) row.addEventListener("click", opt.onToggle);
+    if (opt.onClick) row.addEventListener("click", opt.onClick);
+    if (opt.onDblClick) row.addEventListener("dblclick", opt.onDblClick);
+    return row;
+  }
+
+  function renderLibMeta() {
+    var meta = $("lib-meta");
+    var btn = $("btn-lib-load");
+    if (!meta || !btn) return;
+    if (libSel) {
+      meta.textContent = libSel.title + (libSel.level ? " · " + libSel.level : "");
+      meta.title = libSel.path + " › " + libSel.title;
+      btn.disabled = false;
+    } else {
+      var total = libs.reduce(function (n, l) { return n + libArticleCount(l.data); }, 0);
+      meta.textContent = libs.length + " 个资料库 · " + total + " 篇 · 双击直接载入";
+      meta.title = "";
+      btn.disabled = true;
+    }
+  }
+
+  function openBrowse() {
+    var modal = $("lib-modal");
+    if (!modal) return;
+    libSel = null;
+    libFilter = "";
+    $("lib-filter").value = "";
+    $("lib-sub").textContent = "资料库 → 系列 → 书 → 文章";
+    modal.hidden = false;
+    syncScrollLock();
+    renderLibTree();
+    prefetchLibs();
+  }
+
+  function closeBrowse() {
+    var modal = $("lib-modal");
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    libSel = null;
+    syncScrollLock();
+  }
+
+  function closeAllModals() {
+    ["lib-modal", "panel", "lib-manage-modal"].forEach(function (id) {
+      var el = $(id);
+      if (el) el.hidden = true;
+    });
+    libSel = null;
+    panelFromBrowse = false;
+    syncScrollLock();
+  }
+
+  function loadSelectedArticle() {
+    if (!libSel) { toast("先选一篇文章"); return; }
+    var target = libSel;
+    toast("正在载入：" + target.title);
+    fetch(target.url, { cache: "no-cache" }).then(function (r) {
+      log("article fetch: status", r.status, target.url);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function (raw) {
+      var parsed = normalize(raw);
+      log("article loaded from library:", target.url, parsed.title);
+      closeAllModals();
+      applyData(parsed, target.title);
+    }).catch(function (err) {
+      logError("loadSelectedArticle failed:", target.url, err);
+      toast("文章载入失败：" + err.message);
+    });
+  }
+
+  /* ---------- 资料库管理 ---------- */
+  function openManage() {
+    var m = $("lib-manage-modal");
+    if (!m) return;
+    m.hidden = false;
+    syncScrollLock();
+    renderManageList();
+    prefetchLibs();
+  }
+
+  function closeManage() {
+    var m = $("lib-manage-modal");
+    if (!m || m.hidden) return;
+    m.hidden = true;
+    syncScrollLock();
+  }
+
+  function renderManageList() {
+    var box = $("lib-list");
+    if (!box) return;
+    box.innerHTML = "";
+    libs.forEach(function (lib, i) {
+      var row = document.createElement("div");
+      row.className = "lib-row";
+
+      var main = document.createElement("div");
+      main.className = "lib-row-main";
+      var nm = document.createElement("span");
+      nm.className = "lib-name";
+      nm.textContent = libLabel(lib);
+      var uu = document.createElement("span");
+      uu.className = "lib-url";
+      uu.textContent = lib.state === "error"
+        ? "读取失败：" + resolveUrl(lib.url)
+        : resolveUrl(lib.url);
+      if (lib.state === "error") uu.classList.add("bad");
+      main.appendChild(nm);
+      main.appendChild(uu);
+      row.appendChild(main);
+
+      var acts = document.createElement("div");
+      acts.className = "lib-row-acts";
+      var openBtn = document.createElement("button");
+      openBtn.type = "button";
+      openBtn.className = "lib-open";
+      openBtn.textContent = "查看";
+      openBtn.addEventListener("click", function () {
+        closeManage();
+        if ($("lib-modal").hidden) openBrowse();
+        libOpen["l" + i] = true;
+        renderLibTree();
+        var target = document.querySelector('.lib-item[data-lib="' + i + '"]');
+        if (target && target.scrollIntoView) target.scrollIntoView({ block: "nearest" });
+      });
+      acts.appendChild(openBtn);
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "lib-del";
+      delBtn.textContent = "移除";
+      delBtn.title = "从列表移除（不删除仓库文件）";
+      delBtn.addEventListener("click", function () {
+        removeLib(i);
+      });
+      acts.appendChild(delBtn);
+      row.appendChild(acts);
+      box.appendChild(row);
+    });
+
+    if (!libs.length) {
+      var empty = document.createElement("p");
+      empty.className = "lib-empty";
+      empty.textContent = "列表是空的。加一个资料库，或点下面「恢复默认资料库」。";
+      box.appendChild(empty);
+    }
+
+    var restore = $("btn-lib-restore");
+    if (restore) {      var hasDefault = libs.some(function (l) {
+        return resolveUrl(l.url) === resolveUrl(DEFAULT_LIB_URL);
+      });
+      restore.hidden = hasDefault;
+    }
+  }
+
+  function addLibrary(rawUrl) {
+    var abs = resolveUrl(rawUrl);
+    if (!abs) { toast("网址不合法"); return; }
+    if (!/^https?:/i.test(abs)) { toast("只支持 http / https 网址"); return; }
+    if (libs.some(function (l) { return resolveUrl(l.url) === abs; })) {
+      toast("这个资料库已经添加过了");
+      return;
+    }
+    var probe = { url: abs, name: abs };
+    toast("正在校验索引…");
+    fetchIndex(probe).then(function (idx) {
+      libs.push({ url: abs, name: idx.name, builtin: false, state: "ok", data: idx, err: "" });
+      saveLibs();
+      renderManageList();
+      renderLibTree();
+      $("lib-add-url").value = "";
+      toast("已添加资料库：" + idx.name);
+      log("addLibrary: ok", abs, idx.name);
+    }).catch(function (err) {
+      logError("addLibrary failed:", abs, err);
+      toast("添加失败：" + err.message);
+    });
+  }
+
   /* ---------- 音色/语速弹层 ---------- */
   function togglePopover() {
     var pop = $("voice-pop");
@@ -444,13 +1024,20 @@
 
   /* ---------- 载入面板 ---------- */
   function openPanel() {
+    if (!$("lib-modal").hidden) panelFromBrowse = true;
     $("panel").hidden = false;
-    document.body.style.overflow = "hidden";
+    syncScrollLock();
   }
 
   function closePanel() {
     $("panel").hidden = true;
-    document.body.style.overflow = "";
+    syncScrollLock();
+    if (panelFromBrowse) {
+      panelFromBrowse = false;
+      $("lib-modal").hidden = false;
+      syncScrollLock();
+      renderLibTree();
+    }
   }
 
   function copyText(text, label) {
@@ -526,6 +1113,7 @@
   /* ---------- 装配 ---------- */
   function init() {
     log("init: start", document.readyState, location.href);
+    loadLibs();
     try {
       state.data = normalize(window.DEMO_DATA);
     } catch (err) {
@@ -610,7 +1198,37 @@
     $("btn-prev").addEventListener("click", function () { go(-1); });
     $("btn-next").addEventListener("click", function () { go(1); });
 
-    $("btn-load").addEventListener("click", openPanel);
+    $("btn-load").addEventListener("click", openBrowse);
+
+    /* ---------- 资料库事件 ---------- */
+    $("btn-lib-import").addEventListener("click", openPanel);
+    $("btn-lib-manage").addEventListener("click", openManage);
+    $("btn-manage-close").addEventListener("click", closeManage);
+    $("btn-lib-restore").addEventListener("click", restoreDefaultLib);
+    $("lib-manage-modal").addEventListener("click", function (e) {
+      if (e.target === this) closeManage();
+    });
+    $("lib-add-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var v = $("lib-add-url").value.trim();
+      if (!v) { toast("先填资料库网址"); return; }
+      addLibrary(v);
+    });
+    $("btn-lib-close").addEventListener("click", closeBrowse);
+    $("lib-modal").addEventListener("click", function (e) {
+      if (e.target === this) closeBrowse();
+    });
+    $("btn-lib-load").addEventListener("click", loadSelectedArticle);
+    $("lib-filter").addEventListener("input", function () {
+      libFilter = this.value;
+      renderLibTree();
+    });
+    $("lib-filter").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (libSel) loadSelectedArticle();
+      }
+    });
     $("btn-voice").addEventListener("click", function (e) {
       e.stopPropagation();
       togglePopover();
@@ -667,7 +1285,9 @@
       log("keydown:", e.key, "repeat", e.repeat,
         "target", e.target ? e.target.tagName + "." + (e.target.className || "") : "(none)");
       if (e.key === "Escape") {
+        if (!$("lib-manage-modal").hidden) { log("keydown: Escape closes manage modal"); closeManage(); return; }
         if (!$("panel").hidden) { log("keydown: Escape closes panel"); closePanel(); return; }
+        if (!$("lib-modal").hidden) { log("keydown: Escape closes browse modal"); closeBrowse(); return; }
         if (!$("voice-pop").hidden) { log("keydown: Escape closes popover"); closePopover(); return; }
         closeCard();
         return;
@@ -676,7 +1296,9 @@
         log("keydown: ignored, input/select/textarea focused");
         return;
       }
-      if (!$("panel").hidden) { log("keydown: ignored, panel open"); return; }
+      if (!$("panel").hidden || !$("lib-modal").hidden || !$("lib-manage-modal").hidden) {
+        log("keydown: ignored, modal open"); return;
+      }
       var isRateKey = e.key === "ArrowUp" || e.key === "ArrowDown";
       if (!$("voice-pop").hidden && !isRateKey) {
         log("keydown: ignored, popover open and not rate key");

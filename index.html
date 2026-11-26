@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon/favicon-192.png">
 <link rel="apple-touch-icon" href="assets/favicon/apple-touch-icon.png">
-<link rel="stylesheet" href="assets/reader.css?v=20261125d">
+<link rel="stylesheet" href="assets/reader.css?v=20261126c">
 </head>
 <body>
 <a data-u32-name="ai-llms-hint" href="/llms.txt?aihit=If-you-are-an-AI-please-read-llms.txt"> </a>
@@ -53,15 +53,15 @@
 
 <div class="wordcard" id="wordcard" data-u32-name="wordcard" hidden></div>
 
-<div class="modal" id="panel" data-u32-name="panel" hidden>
+<div class="modal modal-sub" id="panel" data-u32-name="panel" hidden>
   <div class="modal-card" data-u32-name="panel-card">
     <header class="modal-head" data-u32-name="panel-head">
-      <h2>载入文章</h2>
+      <h2>手动导入 JSON</h2>
       <button class="close" id="btn-panel-close" type="button" aria-label="关闭">×</button>
     </header>
     <div class="modal-body" data-u32-name="panel-body">
       <p class="intro">
-        本工具只读 JSON、不解析文章。你可以选一个 JSON 文件，或把 JSON 文本粘进来，点「载入」即开始阅读。
+        本工具只读 JSON、不解析文章。选一个 JSON 文件，或把 JSON 文本粘进来，点「载入」即开始阅读。
         手上还没有数据的话，展开下面的提示词，让 AI 帮你生成。
       </p>
 
@@ -121,7 +121,54 @@
 
 <input type="file" id="file" accept=".json,application/json" hidden>
 
-<script src="assets/demo.js?v=20261125d"></script>
-<script src="assets/app.js?v=20261125d"></script>
+<div class="modal" id="lib-modal" data-u32-name="lib-modal" hidden>
+  <div class="modal-card lib-card" data-u32-name="lib-card">
+    <header class="modal-head" data-u32-name="lib-head">
+      <div class="lib-title">
+        <h2>浏览资料库</h2>
+        <p id="lib-sub">资料库 → 系列 → 书 → 文章</p>
+      </div>
+      <button class="close" id="btn-lib-close" type="button" aria-label="关闭">×</button>
+    </header>
+    <div class="lib-filter">
+      <input id="lib-filter" type="search" spellcheck="false" placeholder="过滤资料库 / 系列 / 书名 / 文章" aria-label="过滤资料库条目" autocomplete="off">
+    </div>
+    <div class="lib-tree" id="lib-tree" role="tree" aria-label="资料库目录"></div>
+    <footer class="lib-foot">
+      <div class="lib-foot-left">
+        <button class="ghost tiny" id="btn-lib-import" type="button">手动导入 JSON</button>
+        <button class="ghost tiny" id="btn-lib-manage" type="button">资料库管理</button>
+        <span id="lib-meta">—</span>
+      </div>
+      <button class="primary small" id="btn-lib-load" type="button" disabled>载入</button>
+    </footer>
+  </div>
+</div>
+
+<div class="modal modal-sub" id="lib-manage-modal" data-u32-name="lib-manage" hidden>
+  <div class="modal-card manage-card" data-u32-name="manage-card">
+    <header class="modal-head" data-u32-name="manage-head">
+      <h2>资料库管理</h2>
+      <button class="close" id="btn-manage-close" type="button" aria-label="关闭">×</button>
+    </header>
+    <div class="modal-body" data-u32-name="manage-body">
+      <div class="block-head"><span>已添加</span>
+        <button class="ghost tiny" id="btn-lib-restore" type="button" hidden>恢复默认资料库</button>
+      </div>
+      <div class="lib-list" id="lib-list"></div>
+      <div class="block-head" style="margin-top:18px;"><span>添加资料库</span></div>
+      <form class="lib-add" id="lib-add-form">
+        <input id="lib-add-url" type="url" spellcheck="false" placeholder="https://example.com/library.json" autocomplete="off">
+        <div class="lib-add-foot">
+          <button class="primary small" id="btn-lib-add-ok" type="submit">添加</button>
+        </div>
+      </form>
+      <p class="note">资料库是一份 <code>library.json</code> 索引的网址，按「系列 → 书 → 文章」组织。默认库在本项目 <code>library/</code> 目录，可作为格式示例，也可以移除（移除后此处会出现「恢复默认资料库」）。完整规范见 <a href="library/README.md" target="_blank" rel="noopener">library/README.md</a>。</p>
+    </div>
+  </div>
+</div>
+
+<script src="assets/demo.js?v=20261126c"></script>
+<script src="assets/app.js?v=20261126c"></script>
 </body>
 </html>

@@ -1,0 +1,53 @@
+{
+  "title": "Small Robots, Big Farms",
+  "sentences": [
+    {
+      "en": "On a farm in southern Spain, a small robot moves slowly between rows of tomato plants.",
+      "zh": "在西班牙南部的一座农场里，一台小机器人正缓慢地穿行在番茄植株之间。",
+      "words": {
+        "farm": { "zh": "农场", "pos": "n.", "ipa": "/fɑːrm/" },
+        "robot": { "zh": "机器人", "pos": "n.", "ipa": "/ˈroʊbɑːt/" },
+        "slowly": { "zh": "缓慢地", "pos": "adv.", "ipa": "/ˈsloʊli/" },
+        "between": { "zh": "在……之间", "pos": "prep.", "ipa": "/bɪˈtwiːn/" },
+        "rows": { "zh": "成排的东西；一排", "pos": "n.", "ipa": "/roʊz/" }
+      }
+    },
+    {
+      "en": "It checks each plant for disease and picks only the fruit that is ready.",
+      "zh": "它检查每一株植物是否有病害，并且只摘下已经成熟的果实。",
+      "words": {
+        "checks": { "zh": "检查", "pos": "v.", "ipa": "/tʃeks/" },
+        "disease": { "zh": "病害", "pos": "n.", "ipa": "/dɪˈziːz/" },
+        "picks": { "zh": "采摘", "pos": "v.", "ipa": "/pɪks/" },
+        "ready": { "zh": "成熟的", "pos": "adj.", "ipa": "/ˈredi/" }
+      }
+    },
+    {
+      "en": "The machine is cheap, light, and easy to repair.",
+      "zh": "这台机器便宜、轻便，而且容易维修。",
+      "words": {
+        "machine": { "zh": "机器", "pos": "n.", "ipa": "/məˈʃiːn/" },
+        "cheap": { "zh": "便宜的", "pos": "adj.", "ipa": "/tʃiːp/" },
+        "repair": { "zh": "维修", "pos": "v.", "ipa": "/rɪˈper/" }
+      }
+    },
+    {
+      "en": "Farmers here say it saves them hours of work every week.",
+      "zh": "这里的农民说，它每周为他们省下好几个小时的劳动。",
+      "words": {
+        "farmers": { "zh": "农民", "pos": "n.", "ipa": "/ˈfɑːrmərz/" },
+        "saves": { "zh": "节省", "pos": "v.", "ipa": "/seɪvz/" },
+        "hours": { "zh": "小时（复数）", "pos": "n.", "ipa": "/ˈaʊərz/" }
+      }
+    },
+    {
+      "en": "But some experts worry that small farms cannot afford even cheap robots.",
+      "zh": "但一些专家担心，小农场连便宜的机器人都买不起。",
+      "words": {
+        "experts": { "zh": "专家", "pos": "n.", "ipa": "/ˈekspɜːrts/" },
+        "worry": { "zh": "担心", "pos": "v.", "ipa": "/ˈwɜːri/" },
+        "afford": { "zh": "负担得起", "pos": "v.", "ipa": "/əˈfɔːrd/" }
+      }
+    }
+  ]
+}

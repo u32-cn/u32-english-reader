@@ -1,0 +1,30 @@
+{
+  "name": "轻读示例资料库",
+  "description": "内置三级示例库：系列 / 书 / 文章。文章路径相对本文件。",
+  "series": [
+    {
+      "name": "每日新闻",
+      "books": [
+        {
+          "name": "2026年11月",
+          "articles": [
+            { "title": "Small Robots, Big Farms", "level": "B1", "file": "articles/small-robots-big-farms.json" },
+            { "title": "The City That Banned Cars", "level": "B2", "file": "articles/the-city-that-banned-cars.json" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "短篇小说",
+      "books": [
+        {
+          "name": "Everyday Stories",
+          "articles": [
+            { "title": "The Lost Umbrella", "level": "A2", "file": "articles/the-lost-umbrella.json" },
+            { "title": "A Letter from the Coast", "level": "B1", "file": "articles/a-letter-from-the-coast.json" }
+          ]
+        }
+      ]
+    }
+  ]
+}
