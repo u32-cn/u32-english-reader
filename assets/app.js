@@ -610,12 +610,173 @@
     log("restoreDefaultLib");
   }
 
+  var childIndexCache = {};
+
+  function countValue(v) {
+    return typeof v === "number" && isFinite(v) ? v : undefined;
+  }
+
+  function nodeCount(node) {
+    if (!node) return 0;
+    if (typeof node.count === "number") return node.count;
+    if (Array.isArray(node.articles)) return node.articles.length;
+    if (Array.isArray(node.books)) {
+      return node.books.reduce(function (n, b) { return n + nodeCount(b); }, 0);
+    }
+    return 0;
+  }
+
+  function normalizeArticleList(raw, indexUrl) {
+    return raw.filter(function (a) {
+      return a && typeof a.file === "string" && a.file;
+    }).map(function (a) {
+      return {
+        title: typeof a.title === "string" && a.title.trim() ? a.title.trim() : a.file,
+        level: typeof a.level === "string" ? a.level : "",
+        url: new URL(a.file, indexUrl).href
+      };
+    });
+  }
+
+  function normalizeChildIndex(raw, indexUrl, kind) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+      throw new Error("子索引根节点必须是一个对象");
+    }
+    if (kind === "series") {
+      if (!Array.isArray(raw.books)) throw new Error("系列索引缺少 books 数组");
+      return {
+        books: raw.books.map(function (b, j) {
+          if (!b || typeof b.name !== "string" || !b.name.trim()) {
+            throw new Error("系列索引第 " + (j + 1) + " 本书缺少 name");
+          }
+          if (typeof b.index !== "string" || !b.index) {
+            throw new Error("书「" + b.name + "」缺少 index");
+          }
+          return {
+            name: b.name.trim(),
+            indexUrl: new URL(b.index, indexUrl).href,
+            articles: [],
+            count: countValue(b.articleCount),
+            loaded: false,
+            loading: false,
+            state: "idle",
+            err: ""
+          };
+        })
+      };
+    }
+    if (!Array.isArray(raw.articles)) throw new Error("书索引缺少 articles 数组");
+    return { articles: normalizeArticleList(raw.articles, indexUrl) };
+  }
+
+  function fetchChildIndex(url, kind) {
+    if (childIndexCache[url]) return childIndexCache[url];
+    var p = fetch(url, { cache: "no-cache" }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function (raw) {
+      return normalizeChildIndex(raw, url, kind);
+    });
+    childIndexCache[url] = p;
+    p.catch(function () { delete childIndexCache[url]; });
+    return p;
+  }
+
+  function loadSeriesChildren(lib, s) {
+    if (!s.indexUrl || s.loaded) return Promise.resolve();
+    if (s.loading) return s.promise || Promise.resolve();
+    s.loading = true;
+    s.state = "loading";
+    s.err = "";
+    renderLibTree();
+    var p = fetchChildIndex(s.indexUrl, "series").then(function (data) {
+      s.books = data.books;
+      s.loaded = true;
+      s.state = "ok";
+    }).catch(function (err) {
+      s.state = "error";
+      s.err = err.message;
+      logError("series index failed:", s.indexUrl, err);
+    }).then(function () {
+      s.loading = false;
+      renderLibTree();
+    });
+    s.promise = p;
+    return p;
+  }
+
+  function loadBookChildren(lib, b) {
+    if (!b.indexUrl || b.loaded) return Promise.resolve();
+    if (b.loading) return b.promise || Promise.resolve();
+    b.loading = true;
+    b.state = "loading";
+    b.err = "";
+    renderLibTree();
+    var p = fetchChildIndex(b.indexUrl, "book").then(function (data) {
+      b.articles = data.articles;
+      b.loaded = true;
+      b.state = "ok";
+    }).catch(function (err) {
+      b.state = "error";
+      b.err = err.message;
+      logError("book index failed:", b.indexUrl, err);
+    }).then(function () {
+      b.loading = false;
+      renderLibTree();
+    });
+    b.promise = p;
+    return p;
+  }
+
+  function ensureAllIndexes() {
+    var jobs = [];
+    libs.forEach(function (lib) {
+      var idx = lib.data;
+      if (!idx || idx.version !== 2) return;
+      idx.series.forEach(function (s) {
+        jobs.push(loadSeriesChildren(lib, s).then(function () {
+          return Promise.all(s.books.map(function (b) { return loadBookChildren(lib, b); }));
+        }));
+      });
+    });
+    return Promise.all(jobs);
+  }
+
   function normalizeLibrary(raw, indexUrl) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
       throw new Error("索引根节点必须是一个对象");
     }
     if (!Array.isArray(raw.series) || raw.series.length === 0) {
       throw new Error("缺少非空的 series 数组");
+    }
+    var libName = typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : "未命名资料库";
+    if (raw.version === 2) {
+      var v2Series = raw.series.map(function (s, i) {
+        if (!s || typeof s.name !== "string" || !s.name.trim()) {
+          throw new Error("第 " + (i + 1) + " 个系列缺少 name");
+        }
+        if (typeof s.index !== "string" || !s.index) {
+          throw new Error("系列「" + s.name + "」缺少 index");
+        }
+        return {
+          name: s.name.trim(),
+          indexUrl: new URL(s.index, indexUrl).href,
+          books: [],
+          count: countValue(s.articleCount),
+          loaded: false,
+          loading: false,
+          state: "idle",
+          err: ""
+        };
+      });
+      return {
+        name: libName,
+        description: typeof raw.description === "string" ? raw.description : "",
+        version: 2,
+        series: v2Series,
+        count: countValue(raw.articleCount),
+        baseUrl: indexUrl
+      };
     }
     var series = raw.series.map(function (s, i) {
       if (!s || typeof s.name !== "string" || !s.name.trim()) {
@@ -639,7 +800,8 @@
       return { name: s.name.trim(), books: books };
     });
     return {
-      name: typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : "未命名资料库",
+      name: libName,
+      version: 1,
       series: series,
       baseUrl: indexUrl
     };
@@ -663,12 +825,9 @@
   }
 
   function libArticleCount(idx) {
-    var n = 0;
     if (!idx) return 0;
-    idx.series.forEach(function (s) {
-      s.books.forEach(function (b) { n += b.articles.length; });
-    });
-    return n;
+    if (typeof idx.count === "number") return idx.count;
+    return idx.series.reduce(function (n, s) { return n + nodeCount(s); }, 0);
   }
 
   function libLabel(lib) {
@@ -776,14 +935,18 @@
       seriesViews.forEach(function (sv) {
         var sKey = lKey + "s" + sv.si;
         var sOpen = q ? true : libOpen[sKey] !== false;
-        var sCount = sv.s.books.reduce(function (n, b) { return n + b.articles.length; }, 0);
         box.appendChild(libRowElem("series", {
           label: sv.s.name,
           open: sOpen,
           caret: true,
-          count: sCount,
+          count: nodeCount(sv.s),
+          state: sv.s.state,
+          err: sv.s.err,
           onToggle: function () {
             libOpen[sKey] = !libOpen[sKey];
+            if (!sOpen && sv.s.indexUrl && (sv.s.state !== "ok" || !sv.s.loaded)) {
+              loadSeriesChildren(lib, sv.s);
+            }
             renderLibTree();
           }
         }));
@@ -796,9 +959,14 @@
             label: bv.b.name,
             open: bOpen,
             caret: true,
-            count: bv.b.articles.length,
+            count: nodeCount(bv.b),
+            state: bv.b.state,
+            err: bv.b.err,
             onToggle: function () {
               libOpen[bKey] = !libOpen[bKey];
+              if (!bOpen && bv.b.indexUrl && (bv.b.state !== "ok" || !bv.b.loaded)) {
+                loadBookChildren(lib, bv.b);
+              }
               renderLibTree();
             }
           }));
@@ -1286,6 +1454,7 @@
     $("lib-filter").addEventListener("input", function () {
       libFilter = this.value;
       renderLibTree();
+      if (libFilter.trim()) ensureAllIndexes().then(renderLibTree);
     });
     $("lib-filter").addEventListener("keydown", function (e) {
       if (e.key === "Enter") {

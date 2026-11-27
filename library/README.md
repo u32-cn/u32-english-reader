@@ -1,4 +1,4 @@
-# 资料库规范（en-reader library v1）
+# 资料库规范（en-reader library v1 / v2）
 
 资料库就是**一份 JSON 索引文件的可访问网址**。前端只认这个网址，不关心它放在 GitHub、对象存储还是本机目录。
 
@@ -42,6 +42,30 @@
 | `articles[].title` | 否 | 文章标题，缺省用 `file` 原样显示 |
 | `articles[].level` | 否 | 难度标签，如 `A2` `B1` `B2`，只用于展示 |
 | `articles[].file` | **是** | 文章 JSON 的路径，相对索引文件所在 URL 解析 |
+
+## v2：分层索引
+
+文章很多时不要把三级全写进一个 `library.json`。v2 只保留系列列表，每级各自存自己的列表，展开时按需 fetch。
+
+```json
+{
+  "name": "轻读官方资料库",
+  "version": 2,
+  "series": [
+    {
+      "name": "中国古典名著",
+      "index": "library/chinese-classics/index.json",
+      "bookCount": 1,
+      "articleCount": 108
+    }
+  ]
+}
+```
+
+- 系列索引（`series[].index` 指向）：`{ "name": "…", "books": [ { "name": "…", "index": "journey-to-the-west/index.json", "articleCount": 108 } ] }`
+- 书索引（`books[].index` 指向）：`{ "name": "…", "articles": [ { "title": "…", "level": "A2", "file": "ep001.json" } ] }`
+- `index` / `file` 都相对**所在索引文件**解析；`bookCount` / `articleCount` 只用于展示数量，建议由脚本生成。
+- 浏览器展开系列/书时才读取下一层；搜索时会拉取所有索引（不拉正文）。v1 全量索引仍完全兼容。
 
 ## 三条硬规则
 
