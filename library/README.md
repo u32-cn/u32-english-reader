@@ -10,7 +10,7 @@
 
 ```json
 {
-  "name": "轻读示例资料库",
+  "name": "U32示例资料库",
   "description": "可选，一句话说明",
   "series": [
     {
@@ -49,7 +49,7 @@
 
 ```json
 {
-  "name": "轻读官方资料库",
+  "name": "U32官方资料库",
   "version": 2,
   "series": [
     {

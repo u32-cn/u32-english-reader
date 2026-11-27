@@ -1,4 +1,4 @@
-"""生成 轻读 favicon（方案 D：朗读波形）
+"""生成 U32 favicon（方案 D：朗读波形）
 用法: python make_icon.py
 产物: favicon.ico(16/32/48), favicon-32.png, favicon-192.png, apple-touch-icon.png(180)
 改色只需改 ACCENT；改图形改 BARS / BARS_SMALL。

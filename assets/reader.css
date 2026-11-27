@@ -1,4 +1,4 @@
-/* 轻读 LIGHT — 英语阅读器样式 */
+/* U32 LIGHT — 英语阅读器样式 */
 :root {
   --bg-top: #f6fbfe;
   --bg-bottom: #e8f0f7;
@@ -580,6 +580,7 @@ code {
 }
 .lib-article.selected { background: #e2f4f1; color: var(--accent-dark); font-weight: 600; }
 .lib-article.selected .lib-dot { background: var(--accent); }
+.lib-article.selected { outline: 2px solid var(--accent); outline-offset: -2px; }
 .lib-empty { margin: 0; padding: 26px 16px; text-align: center; font-size: 13px; color: var(--muted); }
 .lib-foot {
   display: flex;

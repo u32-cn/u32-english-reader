@@ -141,7 +141,7 @@
     log("render: idx", state.idx, "title", state.data.title,
       "showZh", state.showZh, "auto", state.auto, "mask", state.mask, "rate", state.rate);
     $("title").textContent = state.data.title;
-    document.title = state.data.title + " · 轻读";
+    document.title = state.data.title + " · U32";
     $("sentence").innerHTML = tokenize(s.en, s.words);
     $("sentence").classList.toggle("masked", state.mask);
     $("translation").textContent = s.zh || "";
@@ -484,8 +484,9 @@
   var OFFICIAL_LIB_URL = "https://u32-english-reader-official-library.u32.cn/library.json";
   var DEFAULT_LIBS = [
     { url: DEFAULT_LIB_URL, name: "默认资料库" },
-    { url: OFFICIAL_LIB_URL, name: "轻读官方资料库" }
+    { url: OFFICIAL_LIB_URL, name: "U32官方资料库" }
   ];
+  var LIB_BROWSE_KEY = "en-reader.libbrowse.v1";
   var libs = [];
   var libHidden = [];
   var libCache = {};
@@ -494,8 +495,94 @@
   var libOpen = {};
   var panelFromBrowse = false;
 
+  /* 浏览窗状态：展开项 / 选中项 / 滚动位置，持久化到 localStorage */
+  var browseState = { sel: null, scrollTop: 0 };
+  var desiredScroll = null;   // 树当前应处的 scrollTop；null = 不接管
+  var scrollSaveTimer = 0;
+  var revealBusy = false;
+  var validateSel = false;
+
   function resolveUrl(u) {
     try { return new URL(u, location.href).href; } catch (e) { return ""; }
+  }
+
+  /* 展开状态键：跟随「资料库 URL → 系列名 → 书名」，避免下标错位 */
+  function libKeyOf(lib) {
+    return "lib:" + resolveUrl(lib.url);
+  }
+
+  /* 同名兄弟节点用 ~2 / ~3 消歧 */
+  function nodeKey(base, siblings, i) {
+    var it = siblings && siblings[i];
+    var name = it && typeof it.name === "string" ? it.name : String(i);
+    var seen = 1;
+    for (var k = 0; k < i; k++) {
+      if (siblings[k] && siblings[k].name === name) seen++;
+    }
+    return base + "#n:" + name + (seen > 1 ? "~" + seen : "");
+  }
+
+  function loadBrowseState() {
+    try {
+      var raw = localStorage.getItem(LIB_BROWSE_KEY);
+      if (!raw) { log("loadBrowseState: empty"); return; }
+      var v = JSON.parse(raw);
+      if (!v || typeof v !== "object") return;
+      if (v.open && typeof v.open === "object") {
+        Object.keys(v.open).forEach(function (k) {
+          if (k && (v.open[k] === true || v.open[k] === false)) libOpen[k] = v.open[k];
+        });
+      }
+      if (v.sel && typeof v.sel.url === "string" && v.sel.url) {
+        browseState.sel = {
+          title: typeof v.sel.title === "string" ? v.sel.title : "",
+          level: typeof v.sel.level === "string" ? v.sel.level : "",
+          url: v.sel.url,
+          path: typeof v.sel.path === "string" ? v.sel.path : "",
+          chain: Array.isArray(v.sel.chain) ? v.sel.chain.filter(function (u) {
+            return typeof u === "string" && u;
+          }) : []
+        };
+      } else {
+        browseState.sel = null;
+      }
+      browseState.scrollTop = (typeof v.scrollTop === "number" && isFinite(v.scrollTop) && v.scrollTop > 0)
+        ? v.scrollTop : 0;
+      log("loadBrowseState:", Object.keys(libOpen).length, "open node(s), sel:",
+        browseState.sel ? browseState.sel.url : "(none)", "scrollTop:", browseState.scrollTop);
+    } catch (e) { logError("loadBrowseState failed:", e); }
+  }
+
+  function saveBrowseState() {
+    try {
+      var box = $("lib-tree");
+      var open = {};
+      Object.keys(libOpen).forEach(function (k) {
+        if (libOpen[k] === true || libOpen[k] === false) open[k] = libOpen[k];
+      });
+      var sel = libSel ? {
+        title: libSel.title, level: libSel.level || "",
+        url: libSel.url, path: libSel.path || "", chain: libSel.chain || []
+      } : browseState.sel;
+      /* 以「意图位置」为准：折叠瞬间 DOM 会被钳位，别把钳位值存下来 */
+      var top = desiredScroll !== null ? desiredScroll
+        : (box && !$("lib-modal").hidden ? box.scrollTop : browseState.scrollTop);
+      browseState.sel = sel;
+      browseState.scrollTop = top;
+      localStorage.setItem(LIB_BROWSE_KEY, JSON.stringify({
+        open: open, sel: sel, scrollTop: top
+      }));
+      log("saveBrowseState:", Object.keys(open).length, "open node(s), sel:",
+        sel ? sel.url : "(none)", "scrollTop:", top);
+    } catch (e) { logError("saveBrowseState failed:", e); }
+  }
+
+  /* 让树的 scrollTop 保持住：每次重渲染后回填，用户主动滚动时更新目标值 */
+  function applyTreeScroll() {
+    var box = $("lib-tree");
+    if (!box || desiredScroll === null) return;
+    if (Math.abs(box.scrollTop - desiredScroll) < 1) return;
+    box.scrollTop = desiredScroll;
   }
 
   function anyModalOpen() {
@@ -669,8 +756,11 @@
     return { articles: normalizeArticleList(raw.articles, indexUrl) };
   }
 
+  var pendingIndexFetches = 0;
+
   function fetchChildIndex(url, kind) {
     if (childIndexCache[url]) return childIndexCache[url];
+    pendingIndexFetches++;
     var p = fetch(url, { cache: "no-cache" }).then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
@@ -678,7 +768,8 @@
       return normalizeChildIndex(raw, url, kind);
     });
     childIndexCache[url] = p;
-    p.catch(function () { delete childIndexCache[url]; });
+    p.catch(function () { delete childIndexCache[url]; })
+      .then(function () { pendingIndexFetches--; });
     return p;
   }
 
@@ -740,6 +831,108 @@
       });
     });
     return Promise.all(jobs);
+  }
+
+  /* 按文章 URL 反查祖先并展开（只在数据已就位时才找得到） */
+  function revealByLoadedData(want) {
+    var hit = false;
+    libs.forEach(function (lib) {
+      var idx = lib.data;
+      if (!idx) return;
+      var lk = libKeyOf(lib);
+      idx.series.forEach(function (s, si) {
+        var books = Array.isArray(s.books) ? s.books : [];
+        books.forEach(function (b, bi) {
+          var arts = Array.isArray(b.articles) ? b.articles : [];
+          if (!arts.some(function (a) { return a && a.url === want; })) return;
+          hit = true;
+          libOpen[lk] = true;
+          libOpen[nodeKey(lk, idx.series, si)] = true;
+          libOpen[nodeKey(nodeKey(lk, idx.series, si), books, bi)] = true;
+        });
+      });
+    });
+    return hit;
+  }
+
+  /* 文章是否还在已加载的索引里（不管当前是否展开） */
+  function selExistsAnywhere(url) {
+    var yes = false;
+    libs.forEach(function (lib) {
+      var idx = lib.data;
+      if (!idx || yes) return;
+      idx.series.forEach(function (s) {
+        (s.books || []).forEach(function (b) {
+          if (yes) return;
+          if ((b.articles || []).some(function (a) { return a && a.url === url; })) yes = true;
+        });
+      });
+    });
+    return yes;
+  }
+
+  /* 恢复上次选中项：先看已就位数据，再按保存的索引链补拉子索引 */
+  function revealSavedSelection() {
+    var sel = browseState.sel;
+    if (!sel || !sel.url) return Promise.resolve(false);
+    if (revealByLoadedData(sel.url)) { renderLibTree(); return Promise.resolve(true); }
+
+    var chain = sel.chain || [];
+    if (!chain.length) return Promise.resolve(false);
+
+    var jobs = [];
+    libs.forEach(function (lib) {
+      var idx = lib.data;
+      if (!idx) return;
+      var lk = libKeyOf(lib);
+      idx.series.forEach(function (s, si) {
+        if (chain.indexOf(s.indexUrl) < 0) return;
+        var sk = nodeKey(lk, idx.series, si);
+        jobs.push(loadSeriesChildren(lib, s).then(function () {
+          var books = Array.isArray(s.books) ? s.books : [];
+          books.forEach(function (b, bi) {
+            if (chain.indexOf(b.indexUrl) < 0) return;
+            jobs.push(loadBookChildren(lib, b));
+          });
+        }));
+      });
+    });
+    return Promise.all(jobs).then(function () {
+      return revealByLoadedData(sel.url);
+    });
+  }
+
+  /* 数据到齐后确认上次的选中项是否真的不存在了（祖先折叠不算消失） */
+  function validateSavedSelection() {
+    if (!validateSel) return;
+    if (!libSel) { validateSel = false; return; }
+    var busy = revealBusy || pendingIndexFetches > 0 ||
+      libs.some(function (l) { return l.state === "loading" || l.state === "idle"; });
+    if (busy) return;
+    if (selExistsAnywhere(libSel.url)) { validateSel = false; return; }
+    if (revealByLoadedData(libSel.url)) { validateSel = false; renderLibTree(); return; }
+    log("validateSavedSelection: gone, clear", libSel.url);
+    libSel = null;
+    validateSel = false;
+    renderLibTree();
+    saveBrowseState();
+  }
+
+  function revealAndRender() {
+    if (revealBusy) { renderLibTree(); return; }
+    revealBusy = true;
+    revealSavedSelection().then(function () {
+      revealBusy = false;
+      renderLibTree();
+      applyTreeScroll();
+      validateSavedSelection();
+    }).catch(function (err) {
+      revealBusy = false;
+      logError("revealSavedSelection failed:", err);
+      renderLibTree();
+      applyTreeScroll();
+      validateSavedSelection();
+    });
   }
 
   function normalizeLibrary(raw, indexUrl) {
@@ -860,7 +1053,10 @@
   }
 
   function redrawLibraryUI() {
-    if (!$("lib-modal").hidden) renderLibTree();
+    if (!$("lib-modal").hidden) {
+      renderLibTree();
+      if (validateSel) revealAndRender();
+    }
     if (!$("lib-manage-modal").hidden) renderManageList();
   }
 
@@ -878,13 +1074,14 @@
       p0.textContent = "还没有资料库，点下方「资料库管理」添加";
       box.appendChild(p0);
       renderLibMeta();
+      applyTreeScroll();
       return;
     }
     var q = libFilter.trim().toLowerCase();
     var shown = 0;
 
     libs.forEach(function (lib, li) {
-      var lKey = "l" + li;
+      var lKey = libKeyOf(lib);
       var libHit = libVisible(lib.name, q);
       var idx = lib.data;
       var seriesViews = [];
@@ -925,7 +1122,8 @@
             return;
           }
           if (lib.state === "loading") { toast("索引读取中，稍等"); return; }
-          libOpen[lKey] = !libOpen[lKey];
+          libOpen[lKey] = !lOpen;
+          saveBrowseState();
           renderLibTree();
         }
       }));
@@ -933,7 +1131,7 @@
       if (!lOpen || !idx) return;
 
       seriesViews.forEach(function (sv) {
-        var sKey = lKey + "s" + sv.si;
+        var sKey = nodeKey(lKey, idx.series, sv.si);
         var sOpen = q ? true : (sv.s.indexUrl ? libOpen[sKey] === true : libOpen[sKey] !== false);
         box.appendChild(libRowElem("series", {
           label: sv.s.name,
@@ -943,7 +1141,8 @@
           state: sv.s.state,
           err: sv.s.err,
           onToggle: function () {
-            libOpen[sKey] = !libOpen[sKey];
+            libOpen[sKey] = !sOpen;
+            saveBrowseState();
             if (!sOpen && sv.s.indexUrl && (sv.s.state !== "ok" || !sv.s.loaded)) {
               loadSeriesChildren(lib, sv.s);
             }
@@ -953,7 +1152,7 @@
         if (!sOpen) return;
 
         sv.books.forEach(function (bv) {
-          var bKey = sKey + "b" + bv.bi;
+          var bKey = nodeKey(sKey, sv.s.books, bv.bi);
           var bOpen = q ? true : (bv.b.indexUrl ? libOpen[bKey] === true : libOpen[bKey] !== false);
           box.appendChild(libRowElem("book", {
             label: bv.b.name,
@@ -963,7 +1162,8 @@
             state: bv.b.state,
             err: bv.b.err,
             onToggle: function () {
-              libOpen[bKey] = !libOpen[bKey];
+              libOpen[bKey] = !bOpen;
+              saveBrowseState();
               if (!bOpen && bv.b.indexUrl && (bv.b.state !== "ok" || !bv.b.loaded)) {
                 loadBookChildren(lib, bv.b);
               }
@@ -972,24 +1172,30 @@
           }));
           if (!bOpen) return;
 
+          var chain = [];
+          if (sv.s.indexUrl) chain.push(sv.s.indexUrl);
+          if (bv.b.indexUrl) chain.push(bv.b.indexUrl);
+
           bv.arts.forEach(function (a) {
             var selected = !!(libSel && libSel.url === a.url);
+            var pick = function () {
+              libSel = {
+                title: a.title, level: a.level, url: a.url,
+                path: lib.name + " › " + sv.s.name + " › " + bv.b.name,
+                chain: chain
+              };
+            };
             box.appendChild(libRowElem("article", {
               label: a.title,
               level: a.level,
               selected: selected,
               onClick: function () {
-                libSel = {
-                  title: a.title, level: a.level, url: a.url,
-                  path: lib.name + " › " + sv.s.name + " › " + bv.b.name
-                };
+                pick();
+                saveBrowseState();
                 renderLibTree();
               },
               onDblClick: function () {
-                libSel = {
-                  title: a.title, level: a.level, url: a.url,
-                  path: lib.name + " › " + sv.s.name + " › " + bv.b.name
-                };
+                pick();
                 loadSelectedArticle();
               }
             }));
@@ -1005,6 +1211,8 @@
       box.appendChild(empty);
     }
     renderLibMeta();
+
+    applyTreeScroll();
   }
 
   function libRowElem(kind, opt) {
@@ -1080,30 +1288,44 @@
   function openBrowse() {
     var modal = $("lib-modal");
     if (!modal) return;
-    libSel = null;
     libFilter = "";
     $("lib-filter").value = "";
     $("lib-sub").textContent = "资料库 → 系列 → 书 → 文章";
+    loadBrowseState();
+    libSel = browseState.sel;
+    desiredScroll = browseState.scrollTop;
+    validateSel = true;
     modal.hidden = false;
     syncScrollLock();
     renderLibTree();
+    applyTreeScroll();
+    log("openBrowse: restore sel:", libSel ? libSel.url : "(none)", "scrollTop:", desiredScroll);
+    revealAndRender();
     prefetchLibs();
+    /* 首屏内容不够高时 scrollTop 会被钳掉，布局稳定后再补一次 */
+    requestAnimationFrame(applyTreeScroll);
   }
 
   function closeBrowse() {
     var modal = $("lib-modal");
     if (!modal || modal.hidden) return;
+    saveBrowseState();
     modal.hidden = true;
     libSel = null;
+    desiredScroll = null;
+    validateSel = false;
     syncScrollLock();
   }
 
   function closeAllModals() {
+    if (!$("lib-modal").hidden) saveBrowseState();
     ["lib-modal", "panel", "lib-manage-modal"].forEach(function (id) {
       var el = $(id);
       if (el) el.hidden = true;
     });
     libSel = null;
+    desiredScroll = null;
+    validateSel = false;
     panelFromBrowse = false;
     syncScrollLock();
   }
@@ -1451,6 +1673,17 @@
       if (e.target === this) closeBrowse();
     });
     $("btn-lib-load").addEventListener("click", loadSelectedArticle);
+    $("lib-tree").addEventListener("scroll", function () {
+      var t = this.scrollTop;
+      var max = this.scrollHeight - this.clientHeight;
+      /* 和回填目标一致 = 自己刚写进去的，忽略，别把旧位置冲掉 */
+      if (desiredScroll !== null && Math.abs(t - desiredScroll) < 1) return;
+      /* 折叠后内容变矮被浏览器钳位，不算用户滚动 */
+      if (desiredScroll !== null && t < desiredScroll && desiredScroll > max) return;
+      desiredScroll = t;
+      if (scrollSaveTimer) clearTimeout(scrollSaveTimer);
+      scrollSaveTimer = setTimeout(saveBrowseState, 150);
+    });
     $("lib-filter").addEventListener("input", function () {
       libFilter = this.value;
       renderLibTree();
