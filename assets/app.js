@@ -934,7 +934,7 @@
 
       seriesViews.forEach(function (sv) {
         var sKey = lKey + "s" + sv.si;
-        var sOpen = q ? true : libOpen[sKey] !== false;
+        var sOpen = q ? true : (sv.s.indexUrl ? libOpen[sKey] === true : libOpen[sKey] !== false);
         box.appendChild(libRowElem("series", {
           label: sv.s.name,
           open: sOpen,
@@ -954,7 +954,7 @@
 
         sv.books.forEach(function (bv) {
           var bKey = sKey + "b" + bv.bi;
-          var bOpen = q ? true : libOpen[bKey] !== false;
+          var bOpen = q ? true : (bv.b.indexUrl ? libOpen[bKey] === true : libOpen[bKey] !== false);
           box.appendChild(libRowElem("book", {
             label: bv.b.name,
             open: bOpen,
